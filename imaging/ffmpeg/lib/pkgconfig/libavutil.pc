@@ -1,0 +1,14 @@
+prefix=/home/imagingtechnerd/work/ffmpeg-4.0.2/_mpsoc
+exec_prefix=${prefix}
+libdir=/home/imagingtechnerd/work/ffmpeg-4.0.2/_mpsoc/lib
+includedir=/home/imagingtechnerd/work/ffmpeg-4.0.2/_mpsoc/include
+
+Name: libavutil
+Description: FFmpeg utility library
+Version: 56.14.100
+Requires: 
+Requires.private: 
+Conflicts:
+Libs: -L${libdir}  -lavutil 
+Libs.private: -pthread -lm
+Cflags: -I${includedir}
