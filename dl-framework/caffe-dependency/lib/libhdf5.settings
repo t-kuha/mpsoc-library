@@ -1,0 +1,59 @@
+	    SUMMARY OF THE HDF5 CONFIGURATION
+	    =================================
+
+General Information:
+-------------------
+		   HDF5 Version: 1.8.20
+		  Configured on: Wed Oct 31 08:12:24 UTC 2018
+		  Configured by: imagingtechnerd@ubuntu-1604
+		 Configure mode: production
+		    Host system: arm-none-linux-gnu
+	      Uname information: Linux ubuntu-1604 4.15.0-1021-gcp #22~16.04.1-Ubuntu SMP Wed Sep 26 06:08:54 UTC 2018 x86_64 x86_64 x86_64 GNU/Linux
+		       Byte sex: little-endian
+		      Libraries: shared
+	     Installation point: /home/imagingtechnerd/hdf5-1.8.20/_mpsoc
+
+Compiling Options:
+------------------
+               Compilation Mode: production
+                     C Compiler: /home/imagingtechnerd/xilinx/tools/linux-i386/aarch64-linux-gnu/bin/aarch64-linux-gnu-gcc ( aarch64-linux-gnu-gcc (Linaro GCC 7.2-2017.11-rc1) 7.2.1 20171011)
+                         CFLAGS:  -O2 -pipe -g -feliminate-unused-debug-types 
+                      H5_CFLAGS:   -std=c99 -pedantic -Wall -W -Wundef -Wshadow -Wpointer-arith -Wbad-function-cast -Wcast-qual -Wcast-align -Wwrite-strings -Wconversion -Waggregate-return -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O -finline-functions
+                      AM_CFLAGS: 
+                       CPPFLAGS: 
+                    H5_CPPFLAGS: -D_GNU_SOURCE -D_POSIX_C_SOURCE=200112L   -DNDEBUG -UH5_DEBUG_API
+                    AM_CPPFLAGS: 
+               Shared C Library: yes
+               Static C Library: no
+  Statically Linked Executables: no
+                        LDFLAGS: -Wl,-O1 -Wl,--hash-style=gnu -Wl,--as-needed
+                     H5_LDFLAGS: 
+                     AM_LDFLAGS: 
+ 	 	Extra libraries: -ldl -lm 
+ 		       Archiver: aarch64-linux-gnu-ar
+ 		 	 Ranlib: aarch64-linux-gnu-ranlib
+ 	      Debugged Packages: 
+		    API Tracing: no
+
+Languages:
+----------
+                        Fortran: no
+
+                            C++: no
+
+Features:
+---------
+                  Parallel HDF5: no
+             High Level library: yes
+                   Threadsafety: no
+            Default API Mapping: v18
+ With Deprecated Public Symbols: yes
+         I/O filters (external): 
+                            MPE: no
+                     Direct VFD: no
+                        dmalloc: no
+Clear file buffers before write: yes
+           Using memory checker: no
+         Function Stack Tracing: no
+      Strict File Format Checks: no
+   Optimization Instrumentation: no
