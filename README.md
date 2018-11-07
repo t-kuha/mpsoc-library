@@ -13,4 +13,11 @@ Library files for Zynq MPSoC (64bit ARM CPU)
 
 #### dl-framework: Deep learning frame works
 
-- 
+- caffe: Caffe 1.0
+
+- caffe-dependency: Libraries for building Caffe 1.0
+
+- protoc-host: protoc executable for x86_64 host
+
+- tlite: TensorFlow Lite (1.12.0)
+
