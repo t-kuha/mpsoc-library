@@ -1,0 +1,14 @@
+prefix=/home/pentaxmedical/data/kuriharat/zynq/work/ffmpeg-4.0.3/_install
+exec_prefix=${prefix}
+libdir=/home/pentaxmedical/data/kuriharat/zynq/work/ffmpeg-4.0.3/_install/lib
+includedir=/home/pentaxmedical/data/kuriharat/zynq/work/ffmpeg-4.0.3/_install/include
+
+Name: libavutil
+Description: FFmpeg utility library
+Version: 56.14.100
+Requires: 
+Requires.private: 
+Conflicts:
+Libs: -L${libdir}  -lavutil 
+Libs.private: -pthread -lm
+Cflags: -I${includedir}
