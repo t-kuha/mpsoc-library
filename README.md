@@ -17,13 +17,16 @@ Library files for Zynq MPSoC (64bit ARM CPU)
 
 - caffe-dependency: Libraries for building Caffe 1.0
 
-  - OpenBLAS: v0.3.4
-    - Note: v0.3.5 causes compilation error
   - boost: 1.68.0
   - gflags: v2.2.2
   - glog: v0.3.5
+  - leveldb: v1.20
+  - lmdb: v0.9.23
   - HDF5
+  - OpenBLAS: v0.3.4
+    - Note: v0.3.5 causes compilation error
   - protobuf: v3.6.1
+  - snappy: v1.1.7
 
 - protoc-host: protoc executable for x86_64 host
 
