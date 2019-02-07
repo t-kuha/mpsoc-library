@@ -22,7 +22,7 @@ Library files for Zynq MPSoC (64bit ARM CPU)
   - glog: v0.3.5
   - leveldb: v1.20
   - lmdb: v0.9.23
-  - HDF5
+  - HDF5: 1.10.4
   - OpenBLAS: v0.3.4
     - Note: v0.3.5 causes compilation error
   - protobuf: v3.6.1
