@@ -23,6 +23,7 @@ Library files for Zynq MPSoC (64bit ARM CPU)
   - glog
   - HDF5
   - protobuf
+  - boost
 
 - protoc-host: protoc executable for x86_64 host
 
