@@ -1,19 +1,19 @@
 # mpsoc-library
 Library files for Zynq MPSoC (64bit ARM CPU)
 
+## arm: ARM conpute library & NN SDK
 
-## imaging: Library for image I/O and manipulation
+- computelibrary: ARM compute library
 
-- ffmpeg: 4.0.3
+- nnsdk: ARM NNSDK
 
-- FreeImage: 3.18.0
-
-- OpenCV: 4.0.1
-
+- boost & flatbuffers: dependency for ARM NNSDK
 
 ## dl-framework: Deep learning frame works
 
 - caffe: Caffe 1.0
+
+- vaffe2: Caffe2 (part of PyTorch)
 
 - caffe-dependency: Libraries for building Caffe 1.0
 
@@ -31,6 +31,14 @@ Library files for Zynq MPSoC (64bit ARM CPU)
 - protoc-host: protoc executable for x86_64 host
 
 - tlite: TensorFlow Lite (1.12.0)
+
+## imaging: Library for image I/O and manipulation
+
+- ffmpeg: 4.0.3
+
+- FreeImage: 3.18.0
+
+- OpenCV: 4.0.1
 
 ***
 
