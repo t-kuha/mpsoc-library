@@ -64,7 +64,7 @@ add_library(caffe2 SHARED IMPORTED)
 set_target_properties(caffe2 PROPERTIES
   INTERFACE_COMPILE_OPTIONS "\$<\$<COMPILE_LANGUAGE:CXX>:-std=c++11>"
   INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include"
-  INTERFACE_LINK_LIBRARIES "protobuf::libprotobuf;c10;Threads::Threads;/home/pentaxmedical/data/kuriharat/zynq/mpsoc-library/dl-framework/caffe-dependency/lib/libopenblas.so;glog::glog"
+  INTERFACE_LINK_LIBRARIES "protobuf::libprotobuf;c10;Threads::Threads;glog::glog"
 )
 
 if(CMAKE_VERSION VERSION_LESS 2.8.12)

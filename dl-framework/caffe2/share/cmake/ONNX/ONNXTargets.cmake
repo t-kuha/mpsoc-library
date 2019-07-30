@@ -16,7 +16,7 @@ set(CMAKE_IMPORT_FILE_VERSION 1)
 set(_targetsDefined)
 set(_targetsNotDefined)
 set(_expectedTargets)
-foreach(_expectedTarget onnx onnx_proto onnxifi onnxifi_dummy onnxifi_loader onnxifi_wrapper)
+foreach(_expectedTarget onnx onnx_proto onnxifi onnxifi_dummy onnxifi_loader onnxifi_wrapper foxi foxi_dummy foxi_loader foxi_wrapper)
   list(APPEND _expectedTargets ${_expectedTarget})
   if(NOT TARGET ${_expectedTarget})
     list(APPEND _targetsNotDefined ${_expectedTarget})
@@ -92,6 +92,31 @@ set_target_properties(onnxifi_loader PROPERTIES
 
 # Create imported target onnxifi_wrapper
 add_library(onnxifi_wrapper MODULE IMPORTED)
+
+# Create imported target foxi
+add_library(foxi INTERFACE IMPORTED)
+
+set_target_properties(foxi PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include"
+)
+
+# Create imported target foxi_dummy
+add_library(foxi_dummy SHARED IMPORTED)
+
+set_target_properties(foxi_dummy PROPERTIES
+  INTERFACE_LINK_LIBRARIES "foxi;dl"
+)
+
+# Create imported target foxi_loader
+add_library(foxi_loader STATIC IMPORTED)
+
+set_target_properties(foxi_loader PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include"
+  INTERFACE_LINK_LIBRARIES "foxi;dl"
+)
+
+# Create imported target foxi_wrapper
+add_library(foxi_wrapper MODULE IMPORTED)
 
 if(CMAKE_VERSION VERSION_LESS 3.0.0)
   message(FATAL_ERROR "This file relies on consumers using CMake 3.0.0 or greater.")

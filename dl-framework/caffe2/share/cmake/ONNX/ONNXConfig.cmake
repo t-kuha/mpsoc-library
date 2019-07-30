@@ -4,7 +4,7 @@
 # as well as ONNX targets for other cmake libraries to use.
 
 # library version information
-set(ONNX_VERSION "1.3.0")
+set(ONNX_VERSION "1.5.0")
 
 # import targets
 include ("${CMAKE_CURRENT_LIST_DIR}/ONNXTargets.cmake")

@@ -56,5 +56,36 @@ set_target_properties(onnxifi_wrapper PROPERTIES
 list(APPEND _IMPORT_CHECK_TARGETS onnxifi_wrapper )
 list(APPEND _IMPORT_CHECK_FILES_FOR_onnxifi_wrapper "${_IMPORT_PREFIX}/lib/libonnxifi.so" )
 
+# Import target "foxi_dummy" for configuration "Release"
+set_property(TARGET foxi_dummy APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+set_target_properties(foxi_dummy PROPERTIES
+  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libfoxi_dummy.so"
+  IMPORTED_SONAME_RELEASE "libfoxi_dummy.so"
+  )
+
+list(APPEND _IMPORT_CHECK_TARGETS foxi_dummy )
+list(APPEND _IMPORT_CHECK_FILES_FOR_foxi_dummy "${_IMPORT_PREFIX}/lib/libfoxi_dummy.so" )
+
+# Import target "foxi_loader" for configuration "Release"
+set_property(TARGET foxi_loader APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+set_target_properties(foxi_loader PROPERTIES
+  IMPORTED_LINK_INTERFACE_LANGUAGES_RELEASE "C"
+  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libfoxi_loader.a"
+  )
+
+list(APPEND _IMPORT_CHECK_TARGETS foxi_loader )
+list(APPEND _IMPORT_CHECK_FILES_FOR_foxi_loader "${_IMPORT_PREFIX}/lib/libfoxi_loader.a" )
+
+# Import target "foxi_wrapper" for configuration "Release"
+set_property(TARGET foxi_wrapper APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+set_target_properties(foxi_wrapper PROPERTIES
+  IMPORTED_COMMON_LANGUAGE_RUNTIME_RELEASE ""
+  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libfoxi.so"
+  IMPORTED_NO_SONAME_RELEASE "TRUE"
+  )
+
+list(APPEND _IMPORT_CHECK_TARGETS foxi_wrapper )
+list(APPEND _IMPORT_CHECK_FILES_FOR_foxi_wrapper "${_IMPORT_PREFIX}/lib/libfoxi.so" )
+
 # Commands beyond this point should not need to know the version.
 set(CMAKE_IMPORT_FILE_VERSION)

@@ -23,7 +23,6 @@ static_assert(
   (CAFFE2_VERSION_MAJOR * 10000 + CAFFE2_VERSION_MINOR * 100 + \
    CAFFE2_VERSION_PATCH)
 
-/* #undef CAFFE2_ANDROID */
 #define CAFFE2_BUILD_SHARED_LIBS
 /* #undef CAFFE2_FORCE_FALLBACK_CUDA_MPI */
 /* #undef CAFFE2_HAS_MKL_DNN */
@@ -36,7 +35,7 @@ static_assert(
 #define CAFFE2_USE_EXCEPTION_PTR
 /* #undef CAFFE2_USE_ACCELERATE */
 /* #undef CAFFE2_USE_CUDNN */
-/* #undef CAFFE2_USE_EIGEN_FOR_BLAS */
+#define CAFFE2_USE_EIGEN_FOR_BLAS
 /* #undef CAFFE2_USE_FBCODE */
 #define CAFFE2_USE_GOOGLE_GLOG
 /* #undef CAFFE2_USE_LITE_PROTO */
@@ -44,7 +43,6 @@ static_assert(
 /* #undef CAFFE2_USE_MKLDNN */
 /* #undef CAFFE2_USE_NVTX */
 /* #undef CAFFE2_USE_TRT */
-#define CAFFE2_DISABLE_NUMA
 
 #ifndef USE_NUMPY
 #define USE_NUMPY
@@ -56,9 +54,9 @@ static_assert(
 
 // Useful build settings that are recorded in the compiled binary
 #define CAFFE2_BUILD_STRINGS { \
-  {"CXX_FLAGS", " -Wno-deprecated -fvisibility-inlines-hidden -D_FORCE_INLINES -D_MWAITXINTRIN_H_INCLUDED -D__STRICT_ANSI__ -fopenmp -O2 -fPIC -Wno-narrowing -Wall -Wextra -Wno-missing-field-initializers -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas -Wno-sign-compare -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-result -Wno-strict-overflow -Wno-strict-aliasing -Wno-error=deprecated-declarations -Wno-stringop-overflow -Wno-error=pedantic -Wno-error=redundant-decls -Wno-error=old-style-cast -faligned-new -Wno-unused-but-set-variable -Wno-maybe-uninitialized -Wno-stringop-overflow"}, \
+  {"CXX_FLAGS", "-L/home/imagingtechnerd/git_repo/mpsoc-library/dl-framework/caffe-dependency/lib -L/home/imagingtechnerd/git_repo/mpsoc-library/imaging/ffmpeg/lib -llmdb -lleveldb -lsnappy -lopencv_core -lopencv_highgui -lopencv_imgcodecs -lopencv_imgproc -lopencv_video -lavcodec -lavfilter -lavformat -lavutil -lswresample -lswscale -Wno-deprecated -fvisibility-inlines-hidden -O2 -fPIC -Wno-narrowing -Wall -Wextra -Wno-missing-field-initializers -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas -Wno-sign-compare -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-result -Wno-strict-overflow -Wno-strict-aliasing -Wno-error=deprecated-declarations -Wno-stringop-overflow -Wno-error=pedantic -Wno-error=redundant-decls -Wno-error=old-style-cast -faligned-new -Wno-unused-but-set-variable -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Wno-stringop-overflow"}, \
   {"BUILD_TYPE", "Release"}, \
-  {"BLAS", "OpenBLAS"}, \
+  {"BLAS", "Eigen"}, \
   {"USE_CUDA", "OFF"}, \
   {"USE_NCCL", "OFF"}, \
   {"USE_MPI", "OFF"}, \
@@ -75,11 +73,11 @@ static_assert(
   {"PERF_WITH_AVX512", ""}, \
   {"USE_EXCEPTION_PTR", "1"}, \
   {"USE_ACCELERATE", ""}, \
-  {"USE_EIGEN_FOR_BLAS", ""}, \
+  {"USE_EIGEN_FOR_BLAS", "ON"}, \
   {"USE_LITE_PROTO", ""}, \
   {"USE_MKL", ""}, \
-  {"USE_MKLDNN", "OFF"}, \
+  {"USE_MKLDNN", ""}, \
   {"USE_NVTX", ""}, \
   {"USE_TRT", ""}, \
-  {"DISABLE_NUMA", "1"}, \
+  {"DISABLE_NUMA", "1"},   \
 }

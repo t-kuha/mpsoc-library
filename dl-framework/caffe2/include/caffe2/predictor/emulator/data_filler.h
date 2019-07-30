@@ -31,12 +31,14 @@ class Filler {
     for (const auto& item : *input_data) {
       bytes += item.nbytes();
     }
-    CAFFE_ENFORCE(bytes > 0, "input bytes should be positive");
+    if (bytes == 0) {
+      LOG(WARNING) << "0 input bytes filled";
+    }
 
     return bytes;
   }
 
-  std::vector<std::string> get_input_names() const {
+  const std::vector<std::string>& get_input_names() const {
     CAFFE_ENFORCE(!input_names_.empty(), "input names is not initialized");
     return input_names_;
   }
@@ -93,7 +95,9 @@ class DataRandomFiller : public Filler {
 
   void fill_parameter(Workspace* ws) const override;
 
- private:
+ protected:
+  DataRandomFiller() {}
+
   TensorFiller get_tensor_filler(
       const OperatorDef& op_def,
       int input_index,
@@ -117,6 +121,29 @@ class DataRandomFiller : public Filler {
   std::unordered_map<std::string, filler_type_pair_t> parameters_;
   std::unordered_map<std::string, filler_type_pair_t> inputs_;
 };
+
+// A DataRandomFiller that is more convenient to use in unit tests.
+// Callers just need to supply input dimensions and types for non-intermediate
+// blobs.
+// It also treats parameters the same way as non-intermediate inputs (no
+// handling of parameters separately).
+class TestDataRandomFiller : public DataRandomFiller {
+ public:
+  TestDataRandomFiller(
+      const NetDef& net,
+      const std::vector<std::vector<std::vector<int64_t>>>& inputDims,
+      const std::vector<std::vector<std::string>>& inputTypes);
+
+  // Fill input directly to the workspace.
+  void fillInputToWorkspace(Workspace* workspace) const;
+};
+
+// Convenient helpers to fill data to workspace.
+CAFFE2_API void fillRandomNetworkInputs(
+    const NetDef& net,
+    const std::vector<std::vector<std::vector<int64_t>>>& inputDims,
+    const std::vector<std::vector<std::string>>& inputTypes,
+    Workspace* workspace);
 
 } // namespace emulator
 } // namespace caffe2

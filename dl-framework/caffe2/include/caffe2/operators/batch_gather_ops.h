@@ -36,9 +36,10 @@ class BatchGatherGradientOp final : public Operator<Context> {
 
   // Constructor to recieve axis in case it was passed for GatherOp gradient,
   // use default of 1 for batch gather otherwise.
-  BatchGatherGradientOp(const OperatorDef& operator_def, Workspace* ws)
-    : Operator<Context>(operator_def, ws),
-      OP_SINGLE_ARG(int, "axis", axis_, 1) { }
+  template <class... Args>
+  explicit BatchGatherGradientOp(Args&&... args)
+      : Operator<Context>(std::forward<Args>(args)...),
+        OP_SINGLE_ARG(int, "axis", axis_, 1) {}
   virtual ~BatchGatherGradientOp() noexcept {}
 
   bool RunOnDevice() override {
@@ -58,7 +59,6 @@ class BatchGatherGradientOp final : public Operator<Context> {
     auto& data = Input(DATA);
     auto& indices = Input(INDICES);
     auto& grad = Input(GRAD);
-    auto* output = Output(0);
 
     // ONNX allows negative axis to index from the back, valid range: [-r, r].
     int axis = axis_;
@@ -76,7 +76,7 @@ class BatchGatherGradientOp final : public Operator<Context> {
           "batch gather outer dimensions should match");
     }
 
-    output->ResizeLike(data);
+    auto* output = Output(0, data.sizes(), at::dtype<TData>());
     TData* out_data = output->template mutable_data<TData>();
     if (data.numel() <= 0) {
       return true;
@@ -129,8 +129,9 @@ class BatchGatherGradientOp final : public Operator<Context> {
     CAFFE_THROW(
         "BatchGatherGradient is not implemented on tensor of type ",
         Input(DATA).meta().name(),
-        "Consider adding it a type in the list DispatchHelper or implementing "
-        "a generic version (which won't work for duplicated indices though)");
+        "consider adding it as a type in the DispatchHelper list or "
+        "implementing a generic version (which won't work for "
+        "duplicated indices though)");
   }
 
   INPUT_TAGS(DATA, INDICES, GRAD);

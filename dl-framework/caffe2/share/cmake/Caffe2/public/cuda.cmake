@@ -16,7 +16,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/../Modules_CUDA_fix)
 SET(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE INTERNAL "")
 
 # Find CUDA.
-find_package(CUDA 7.0)
+find_package(CUDA)
 if(NOT CUDA_FOUND)
   message(WARNING
     "Caffe2: CUDA cannot be found. Depending on whether you are building "
@@ -364,20 +364,10 @@ endif()
 
 # Debug and Release symbol support
 if (MSVC)
-  if ((${CMAKE_BUILD_TYPE} MATCHES "Release") OR (${CMAKE_BUILD_TYPE} MATCHES "RelWithDebInfo") OR (${CMAKE_BUILD_TYPE} MATCHES "MinSizeRel"))
-    if (${CAFFE2_USE_MSVC_STATIC_RUNTIME})
-      list(APPEND CUDA_NVCC_FLAGS "-Xcompiler" "-MT")
-    else()
-      list(APPEND CUDA_NVCC_FLAGS "-Xcompiler" "-MD")
-    endif()
-  elseif(${CMAKE_BUILD_TYPE} MATCHES "Debug")
-    if (${CAFFE2_USE_MSVC_STATIC_RUNTIME})
-      list(APPEND CUDA_NVCC_FLAGS "-Xcompiler" "-MTd")
-    else()
-      list(APPEND CUDA_NVCC_FLAGS "-Xcompiler" "-MDd")
-    endif()
+  if (${CAFFE2_USE_MSVC_STATIC_RUNTIME})
+    list(APPEND CUDA_NVCC_FLAGS "-Xcompiler" "-MT$<$<CONFIG:Debug>:d>")
   else()
-    message(FATAL_ERROR "Unknown cmake build type: " ${CMAKE_BUILD_TYPE})
+    list(APPEND CUDA_NVCC_FLAGS "-Xcompiler" "-MD$<$<CONFIG:Debug>:d>")
   endif()
 elseif (CUDA_DEVICE_DEBUG)
   list(APPEND CUDA_NVCC_FLAGS "-g" "-G")  # -G enables device code debugging symbols
