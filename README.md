@@ -1,4 +1,5 @@
-# mpsoc-library
+# mpsoc-library (2018.3)
+
 Library files for Zynq MPSoC (64bit ARM CPU)
 
 ## arm: ARM conpute library & NN SDK
@@ -44,4 +45,4 @@ Library files for Zynq MPSoC (64bit ARM CPU)
 
 ***
 
-- See [wiki](https://github.com/t-kuha/mpsoc-library/wiki) for how to build these libraryes from source
+- See [wiki](https://github.com/t-kuha/mpsoc-library/wiki) for how to build these libraries from source
