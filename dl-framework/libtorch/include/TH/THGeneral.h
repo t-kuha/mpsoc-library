@@ -21,10 +21,10 @@
 #include <mkl_vsl.h>
 #endif
 
-/* #undef USE_BLAS */
+#define USE_BLAS
 /* #undef USE_LAPACK */
 /* #undef BLAS_F2C */
-/* #undef BLAS_USE_CBLAS_DOT */
+#define BLAS_USE_CBLAS_DOT
 
 # define TH_EXTERNC extern "C"
 
