@@ -1,7 +1,7 @@
-prefix=/home/imagingtechnerd/disk/nn/pytorch/_libtorch/_install
-exec_prefix=/home/imagingtechnerd/disk/nn/pytorch/_libtorch/_install
-libdir=/home/imagingtechnerd/disk/nn/pytorch/_libtorch/_install/lib
-includedir=/home/imagingtechnerd/disk/nn/pytorch/_libtorch/_install/include
+prefix=/home/imagingtechnerd/disk/nn/pytorch/_mpsoc/_install
+exec_prefix=/home/imagingtechnerd/disk/nn/pytorch/_mpsoc/_install
+libdir=/home/imagingtechnerd/disk/nn/pytorch/_mpsoc/_install/lib
+includedir=/home/imagingtechnerd/disk/nn/pytorch/_mpsoc/_install/include
 
 Name: Protocol Buffers
 Description: Google's Data Interchange Format

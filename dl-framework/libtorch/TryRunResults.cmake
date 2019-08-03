@@ -83,7 +83,7 @@ set( HAS_C11_ATOMICS_EXITCODE__TRYRUN_OUTPUT
 #                 [1]	/home/imagingtechnerd/disk/nn/pytorch/CMakeLists.txt
 
 set( BLAS_F2C_DOUBLE_WORKS_EXITCODE 
-     "0"
+     "1"
      CACHE STRING "Result from TRY_RUN" FORCE)
 
 set( BLAS_F2C_DOUBLE_WORKS_EXITCODE__TRYRUN_OUTPUT 
