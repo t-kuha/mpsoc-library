@@ -14,7 +14,7 @@ Library files for Zynq MPSoC (64bit ARM CPU)
 
 - caffe: Caffe 1.0
 
-- caffe-dependency: Libraries for building Caffe 1.0 & Caffe2
+- caffe-dependency: Libraries for building Caffe 1.0 & libtorch
 
   - boost: 1.68.0
   - gflags: v2.2.2
@@ -26,14 +26,15 @@ Library files for Zynq MPSoC (64bit ARM CPU)
     - Note: v0.3.5 causes compilation error
   - protobuf: v3.6.1
   - snappy: v1.1.7
+  - ZeroMQ: v4.3.2
 
 - chainerx: ChainerX (v6.0.0)
 
-- libtorch: libtorch & caffe2 (part of PyTorch v.1.1.0)
+- libtorch: libtorch (part of PyTorch v.1.1.0)
 
 - protoc-host: protoc executable for x86_64 host
 
-- tlite: TensorFlow Lite (1.12.0)
+- tlite: TensorFlow Lite (1.15.0)
 
 ## imaging: Library for image I/O and manipulation
 
