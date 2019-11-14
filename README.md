@@ -10,6 +10,8 @@ Library files for Zynq MPSoC (64bit ARM CPU)
 
 - boost & flatbuffers: dependency for ARM NN
 
+## dart: Dart SDK (v2.6)
+
 ## dl-framework: Deep learning frame works
 
 - caffe: Caffe 1.0
@@ -41,6 +43,9 @@ Library files for Zynq MPSoC (64bit ARM CPU)
 - FreeImage: 3.18.0
 
 - OpenCV: 4.1.2
+
+## node.js: Node.js
+
 
 ***
 
