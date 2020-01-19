@@ -359,6 +359,11 @@ inline Tensor dispatch_align_to(Tensor & self, DimnameList names) {
   AutoNoGIL no_gil;
   return self.align_to(names);
 }
+inline Tensor dispatch_align_to(Tensor & self, DimnameList order, int64_t ellipsis_idx) {
+
+  AutoNoGIL no_gil;
+  return self.align_to(order, ellipsis_idx);
+}
 inline Tensor dispatch_all(Tensor & self) {
 
   AutoNoGIL no_gil;
@@ -378,6 +383,11 @@ inline bool dispatch_allclose(Tensor & self, const Tensor & other, double rtol, 
 
   AutoNoGIL no_gil;
   return self.allclose(other, rtol, atol, equal_nan);
+}
+inline Tensor dispatch_angle(Tensor & self) {
+
+  AutoNoGIL no_gil;
+  return self.angle();
 }
 inline Tensor dispatch_any(Tensor & self) {
 
@@ -524,6 +534,26 @@ inline Tensor dispatch_bitwise_not_(Tensor & self) {
   AutoNoGIL no_gil;
   return self.bitwise_not_();
 }
+inline Tensor dispatch_bitwise_xor(Tensor & self, const Tensor & other) {
+
+  AutoNoGIL no_gil;
+  return self.bitwise_xor(other);
+}
+inline Tensor dispatch_bitwise_xor(Tensor & self, Scalar other) {
+
+  AutoNoGIL no_gil;
+  return self.bitwise_xor(other);
+}
+inline Tensor dispatch_bitwise_xor_(Tensor & self, const Tensor & other) {
+
+  AutoNoGIL no_gil;
+  return self.bitwise_xor_(other);
+}
+inline Tensor dispatch_bitwise_xor_(Tensor & self, Scalar other) {
+
+  AutoNoGIL no_gil;
+  return self.bitwise_xor_(other);
+}
 inline Tensor dispatch_bmm(Tensor & self, const Tensor & mat2) {
 
   AutoNoGIL no_gil;
@@ -594,15 +624,20 @@ inline Tensor dispatch_clamp_min_(Tensor & self, Scalar min) {
   AutoNoGIL no_gil;
   return self.clamp_min_(min);
 }
-inline Tensor dispatch_clone(Tensor & self) {
+inline Tensor dispatch_clone(Tensor & self, c10::optional<MemoryFormat> memory_format) {
 
   AutoNoGIL no_gil;
-  return self.clone();
+  return self.clone(memory_format);
 }
 inline Tensor dispatch_coalesce(Tensor & self) {
 
   AutoNoGIL no_gil;
   return self.coalesce();
+}
+inline Tensor dispatch_conj(Tensor & self) {
+
+  AutoNoGIL no_gil;
+  return self.conj();
 }
 inline Tensor dispatch_cos(Tensor & self) {
 
@@ -983,6 +1018,11 @@ inline Tensor dispatch_ifft(Tensor & self, int64_t signal_ndim, bool normalized)
 
   AutoNoGIL no_gil;
   return self.ifft(signal_ndim, normalized);
+}
+inline Tensor dispatch_imag(Tensor & self) {
+
+  AutoNoGIL no_gil;
+  return self.imag();
 }
 inline Tensor dispatch_index_add(Tensor & self, Dimname dim, const Tensor & index, const Tensor & source) {
 
@@ -1539,6 +1579,11 @@ inline Tensor dispatch_new_full(Tensor & self, IntArrayRef size, Scalar fill_val
   AutoNoGIL no_gil;
   return self.new_full(size, fill_value, options);
 }
+inline Tensor dispatch_new_zeros(Tensor & self, IntArrayRef size, const TensorOptions & options) {
+  torch::utils::maybe_initialize_cuda(options);
+  AutoNoGIL no_gil;
+  return self.new_zeros(size, options);
+}
 inline Tensor dispatch_norm(Tensor & self, Scalar p) {
 
   AutoNoGIL no_gil;
@@ -1573,11 +1618,6 @@ inline Tensor dispatch_normal_(Tensor & self, double mean, double std, Generator
 
   AutoNoGIL no_gil;
   return self.normal_(mean, std, generator);
-}
-inline int64_t dispatch_numel(Tensor & self) {
-
-  AutoNoGIL no_gil;
-  return self.numel();
 }
 inline Tensor dispatch_orgqr(Tensor & self, const Tensor & input2) {
 
@@ -1709,6 +1749,11 @@ inline Tensor dispatch_random_(Tensor & self, int64_t to, Generator * generator)
   AutoNoGIL no_gil;
   return self.random_(to, generator);
 }
+inline Tensor dispatch_real(Tensor & self) {
+
+  AutoNoGIL no_gil;
+  return self.real();
+}
 inline Tensor dispatch_reciprocal(Tensor & self) {
 
   AutoNoGIL no_gil;
@@ -1799,15 +1844,15 @@ inline Tensor dispatch_reshape_as(Tensor & self, const Tensor & other) {
   AutoNoGIL no_gil;
   return self.reshape_as(other);
 }
-inline Tensor dispatch_resize_(Tensor & self, IntArrayRef size) {
+inline Tensor dispatch_resize_(Tensor & self, IntArrayRef size, c10::optional<MemoryFormat> memory_format) {
 
   AutoNoGIL no_gil;
-  return self.resize_(size);
+  return self.resize_(size, memory_format);
 }
-inline Tensor dispatch_resize_as_(Tensor & self, const Tensor & the_template) {
+inline Tensor dispatch_resize_as_(Tensor & self, const Tensor & the_template, c10::optional<MemoryFormat> memory_format) {
 
   AutoNoGIL no_gil;
-  return self.resize_as_(the_template);
+  return self.resize_as_(the_template, memory_format);
 }
 inline Tensor dispatch_rfft(Tensor & self, int64_t signal_ndim, bool normalized, bool onesided) {
 

@@ -379,6 +379,16 @@ inline Tensor dispatch_rrelu_with_noise_(Tensor self, const Tensor & noise, Scal
   AutoNoGIL no_gil;
   return at::rrelu_with_noise_(self, noise, lower, upper, training, generator);
 }
+inline Tensor dispatch_slow_conv3d(const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding, Tensor out) {
+
+  AutoNoGIL no_gil;
+  return at::slow_conv3d_out(out, self, weight, kernel_size, bias, stride, padding);
+}
+inline Tensor dispatch_slow_conv3d(const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding) {
+
+  AutoNoGIL no_gil;
+  return at::slow_conv3d(self, weight, kernel_size, bias, stride, padding);
+}
 inline Tensor dispatch_slow_conv_dilated2d(const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation) {
 
   AutoNoGIL no_gil;
@@ -458,16 +468,6 @@ inline Tensor dispatch_thnn_conv2d(const Tensor & self, const Tensor & weight, I
 
   AutoNoGIL no_gil;
   return at::thnn_conv2d(self, weight, kernel_size, bias, stride, padding);
-}
-inline Tensor dispatch_thnn_conv3d(const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding, Tensor out) {
-
-  AutoNoGIL no_gil;
-  return at::thnn_conv3d_out(out, self, weight, kernel_size, bias, stride, padding);
-}
-inline Tensor dispatch_thnn_conv3d(const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding) {
-
-  AutoNoGIL no_gil;
-  return at::thnn_conv3d(self, weight, kernel_size, bias, stride, padding);
 }
 inline Tensor dispatch_thnn_conv_depthwise2d(const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation, Tensor out) {
 

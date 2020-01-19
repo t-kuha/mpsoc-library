@@ -62,10 +62,10 @@ set_target_properties(c10 PROPERTIES
 add_library(torch SHARED IMPORTED)
 
 set_target_properties(torch PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "_THP_CORE;AT_PARALLEL_OPENMP=1"
+  INTERFACE_COMPILE_DEFINITIONS "AT_PARALLEL_OPENMP=1"
   INTERFACE_COMPILE_OPTIONS "-Wall;-Wextra;-Wno-unused-parameter;-Wno-missing-field-initializers;-Wno-write-strings;-Wno-unknown-pragmas;-Wno-missing-braces;-fopenmp"
   INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include"
-  INTERFACE_LINK_LIBRARIES "protobuf::libprotobuf;c10;Threads::Threads;/home/imagingtechnerd/git_repo/mpsoc-library/dl-framework/caffe-dependency/lib/libopenblas.so;glog::glog"
+  INTERFACE_LINK_LIBRARIES "protobuf::libprotobuf;c10;Threads::Threads;/home/pentaxmedical/git_repo/mpsoc-library/dl-framework/caffe-dependency/lib/libopenblas.so;glog::glog"
 )
 
 if(CMAKE_VERSION VERSION_LESS 2.8.12)

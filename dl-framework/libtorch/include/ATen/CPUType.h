@@ -34,10 +34,10 @@ using ConstQuantizerPtr = const c10::intrusive_ptr<Quantizer>&;
 
 #ifdef USE_STATIC_DISPATCH
 namespace CPUType {
-  Tensor & abs_(Tensor & self);
-  Tensor & abs_out(Tensor & out, const Tensor & self);
-  Tensor & acos_(Tensor & self);
-  Tensor & acos_out(Tensor & out, const Tensor & self);
+  Tensor & angle_out(Tensor & out, const Tensor & self);
+  Tensor & real_out(Tensor & out, const Tensor & self);
+  Tensor & imag_out(Tensor & out, const Tensor & self);
+  Tensor & conj_out(Tensor & out, const Tensor & self);
   Tensor add(const Tensor & self, const Tensor & other, Scalar alpha);
   Tensor & add_(Tensor & self, const Tensor & other, Scalar alpha);
   Tensor & add_out(Tensor & out, const Tensor & self, const Tensor & other, Scalar alpha);
@@ -46,8 +46,6 @@ namespace CPUType {
   Tensor & addmv_out(Tensor & out, const Tensor & self, const Tensor & mat, const Tensor & vec, Scalar beta, Scalar alpha);
   Tensor & arange_out(Tensor & out, Scalar start, Scalar end, Scalar step);
   Tensor as_strided(const Tensor & self, IntArrayRef size, IntArrayRef stride, c10::optional<int64_t> storage_offset);
-  Tensor & asin_(Tensor & self);
-  Tensor & asin_out(Tensor & out, const Tensor & self);
   Tensor & atan_(Tensor & self);
   Tensor & atan_out(Tensor & out, const Tensor & self);
   Tensor baddbmm(const Tensor & self, const Tensor & batch1, const Tensor & batch2, Scalar beta, Scalar alpha);
@@ -86,7 +84,7 @@ namespace CPUType {
   Tensor empty(IntArrayRef size, const TensorOptions & options, c10::optional<MemoryFormat> memory_format);
   Tensor _empty_affine_quantized(IntArrayRef size, const TensorOptions & options, double scale, int64_t zero_point, c10::optional<MemoryFormat> memory_format);
   Tensor _empty_per_channel_affine_quantized(IntArrayRef size, const Tensor & scales, const Tensor & zero_points, int64_t axis, const TensorOptions & options, c10::optional<MemoryFormat> memory_format);
-  Tensor & resize_(Tensor & self, IntArrayRef size);
+  Tensor & resize_(Tensor & self, IntArrayRef size, c10::optional<MemoryFormat> memory_format);
   Tensor empty_strided(IntArrayRef size, IntArrayRef stride, const TensorOptions & options);
   Tensor & erf_(Tensor & self);
   Tensor & erf_out(Tensor & out, const Tensor & self);
@@ -98,8 +96,6 @@ namespace CPUType {
   Tensor & eye_out(Tensor & out, int64_t n);
   Tensor & eye_out(Tensor & out, int64_t n, int64_t m);
   Tensor & floor_out(Tensor & out, const Tensor & self);
-  Tensor & frac_(Tensor & self);
-  Tensor & frac_out(Tensor & out, const Tensor & self);
   Tensor from_file(std::string filename, c10::optional<bool> shared, c10::optional<int64_t> size, const TensorOptions & options);
   Tensor grid_sampler_2d(const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners);
   std::tuple<Tensor,Tensor> grid_sampler_2d_backward(const Tensor & grad_output, const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners);
@@ -113,14 +109,11 @@ namespace CPUType {
   std::tuple<Tensor &,Tensor &> kthvalue_out(Tensor & values, Tensor & indices, const Tensor & self, int64_t k, int64_t dim, bool keepdim);
   std::tuple<Tensor,Tensor,Tensor> native_layer_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, int64_t M, int64_t N, double eps);
   std::tuple<Tensor,Tensor,Tensor> native_layer_norm_backward(const Tensor & grad_out, const Tensor & input, const Tensor & mean, const Tensor & rstd, const Tensor & weight, int64_t M, int64_t N, std::array<bool,3> output_mask);
-  std::tuple<Tensor,Tensor,Tensor> native_layer_norm_double_backward(const Tensor & ggI, const Tensor & ggW, const Tensor & ggb, const Tensor & gO, const Tensor & input, const Tensor & mean, const Tensor & rstd, const Tensor & weight, int64_t M, int64_t N, std::array<bool,3> output_mask);
   Tensor & linspace_out(Tensor & out, Scalar start, Scalar end, int64_t steps);
   Tensor & log_out(Tensor & out, const Tensor & self);
-  Tensor & log10_(Tensor & self);
   Tensor & log10_out(Tensor & out, const Tensor & self);
   Tensor & log1p_(Tensor & self);
   Tensor & log1p_out(Tensor & out, const Tensor & self);
-  Tensor & log2_(Tensor & self);
   Tensor & log2_out(Tensor & out, const Tensor & self);
   Tensor & logspace_out(Tensor & out, Scalar start, Scalar end, int64_t steps, double base);
   Tensor _log_softmax(const Tensor & self, int64_t dim, bool half_to_float);
@@ -128,8 +121,6 @@ namespace CPUType {
   Tensor mean(const Tensor & self, c10::optional<ScalarType> dtype);
   Tensor mean(const Tensor & self, IntArrayRef dim, bool keepdim, c10::optional<ScalarType> dtype);
   Tensor & mean_out(Tensor & out, const Tensor & self, IntArrayRef dim, bool keepdim, c10::optional<ScalarType> dtype);
-  Tensor mean(const Tensor & self, DimnameList dim, bool keepdim, c10::optional<ScalarType> dtype);
-  Tensor & mean_out(Tensor & out, const Tensor & self, DimnameList dim, bool keepdim, c10::optional<ScalarType> dtype);
   Tensor mm(const Tensor & self, const Tensor & mat2);
   Tensor & mm_out(Tensor & out, const Tensor & self, const Tensor & mat2);
   Tensor mul(const Tensor & self, const Tensor & other);
@@ -159,16 +150,10 @@ namespace CPUType {
   Tensor & rsqrt_out(Tensor & out, const Tensor & self);
   Tensor sigmoid(const Tensor & self);
   Tensor & sigmoid_(Tensor & self);
-  Tensor & sigmoid_out(Tensor & out, const Tensor & self);
-  Tensor & sin_(Tensor & self);
   Tensor & sin_out(Tensor & out, const Tensor & self);
-  Tensor & sinh_(Tensor & self);
-  Tensor & sinh_out(Tensor & out, const Tensor & self);
   Tensor _softmax(const Tensor & self, int64_t dim, bool half_to_float);
   Tensor _softmax_backward_data(const Tensor & grad_output, const Tensor & output, int64_t dim, const Tensor & self);
   Tensor & sspaddmm_out(Tensor & out, const Tensor & self, const Tensor & mat1, const Tensor & mat2, Scalar beta, Scalar alpha);
-  Tensor & sqrt_(Tensor & self);
-  Tensor & sqrt_out(Tensor & out, const Tensor & self);
   Tensor & tan_(Tensor & self);
   Tensor & tan_out(Tensor & out, const Tensor & self);
   Tensor & tanh_(Tensor & self);
@@ -187,7 +172,7 @@ namespace CPUType {
   Tensor _dirichlet_grad(const Tensor & x, const Tensor & alpha, const Tensor & total);
   Tensor _sample_dirichlet(const Tensor & self, Generator * generator);
   Tensor poisson(const Tensor & self, Generator * generator);
-  Tensor clone(const Tensor & self);
+  Tensor clone(const Tensor & self, c10::optional<MemoryFormat> memory_format);
   Tensor & pow_out(Tensor & out, const Tensor & self, Scalar exponent);
   Tensor pow(const Tensor & self, Scalar exponent);
   Tensor & zero_(Tensor & self);
@@ -233,10 +218,8 @@ namespace CPUType {
   Tensor __or__(const Tensor & self, const Tensor & other);
   Tensor & __ior__(Tensor & self, Scalar other);
   Tensor & __ior__(Tensor & self, const Tensor & other);
-  Tensor __xor__(const Tensor & self, Scalar other);
-  Tensor __xor__(const Tensor & self, const Tensor & other);
-  Tensor & __ixor__(Tensor & self, Scalar other);
-  Tensor & __ixor__(Tensor & self, const Tensor & other);
+  Tensor & bitwise_xor_out(Tensor & out, const Tensor & self, const Tensor & other);
+  Tensor & bitwise_xor_out(Tensor & out, const Tensor & self, Scalar other);
   Tensor __lshift__(const Tensor & self, Scalar other);
   Tensor __lshift__(const Tensor & self, const Tensor & other);
   Tensor & __ilshift__(Tensor & self, Scalar other);
@@ -403,14 +386,9 @@ namespace CPUType {
   Tensor binary_cross_entropy(const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction);
   Tensor & binary_cross_entropy_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction);
   Tensor binary_cross_entropy_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction);
-  Tensor & mse_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction);
-  Tensor mse_loss(const Tensor & self, const Tensor & target, int64_t reduction);
   Tensor & mse_loss_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
   Tensor mse_loss_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
-  Tensor & l1_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction);
-  Tensor l1_loss(const Tensor & self, const Tensor & target, int64_t reduction);
   Tensor & l1_loss_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
-  Tensor l1_loss_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
   Tensor & multi_margin_loss_out(Tensor & out, const Tensor & self, const Tensor & target, Scalar p, Scalar margin, const Tensor & weight, int64_t reduction);
   Tensor multi_margin_loss(const Tensor & self, const Tensor & target, Scalar p, Scalar margin, const Tensor & weight, int64_t reduction);
   Tensor & multi_margin_loss_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, Scalar p, Scalar margin, const Tensor & weight, int64_t reduction);
@@ -428,9 +406,7 @@ namespace CPUType {
   Tensor & nll_loss2d_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction, int64_t ignore_index, const Tensor & total_weight);
   Tensor nll_loss2d_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction, int64_t ignore_index, const Tensor & total_weight);
   Tensor & smooth_l1_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction);
-  Tensor smooth_l1_loss(const Tensor & self, const Tensor & target, int64_t reduction);
   Tensor & smooth_l1_loss_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
-  Tensor smooth_l1_loss_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
   Tensor & soft_margin_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction);
   Tensor soft_margin_loss(const Tensor & self, const Tensor & target, int64_t reduction);
   Tensor & soft_margin_loss_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
@@ -567,7 +543,6 @@ namespace CPUType {
   Tensor & upsample_nearest3d_backward_out(Tensor & grad_input, const Tensor & grad_output, IntArrayRef output_size, IntArrayRef input_size);
   Tensor upsample_nearest3d_backward(const Tensor & grad_output, IntArrayRef output_size, IntArrayRef input_size);
   Tensor & sigmoid_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & output);
-  Tensor sigmoid_backward(const Tensor & grad_output, const Tensor & output);
   Tensor & tanh_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & output);
   Tensor tanh_backward(const Tensor & grad_output, const Tensor & output);
   Tensor & slow_conv_transpose2d_out(Tensor & out, const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding, IntArrayRef output_padding, IntArrayRef dilation);
@@ -582,10 +557,10 @@ namespace CPUType {
   std::tuple<Tensor,Tensor,Tensor> thnn_conv2d_forward(const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding);
   std::tuple<Tensor &,Tensor &,Tensor &> thnn_conv2d_backward_out(Tensor & grad_input, Tensor & grad_weight, Tensor & grad_bias, const Tensor & grad_output, const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, IntArrayRef stride, IntArrayRef padding, const Tensor & finput, const Tensor & fgrad_input);
   std::tuple<Tensor,Tensor,Tensor> thnn_conv2d_backward(const Tensor & grad_output, const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, IntArrayRef stride, IntArrayRef padding, const Tensor & finput, const Tensor & fgrad_input, std::array<bool,3> output_mask);
-  std::tuple<Tensor &,Tensor &,Tensor &> thnn_conv3d_forward_out(Tensor & output, Tensor & finput, Tensor & fgrad_input, const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding);
-  std::tuple<Tensor,Tensor,Tensor> thnn_conv3d_forward(const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding);
-  std::tuple<Tensor &,Tensor &,Tensor &> thnn_conv3d_backward_out(Tensor & grad_input, Tensor & grad_weight, Tensor & grad_bias, const Tensor & grad_output, const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, IntArrayRef stride, IntArrayRef padding, const Tensor & finput, const Tensor & fgrad_input);
-  std::tuple<Tensor,Tensor,Tensor> thnn_conv3d_backward(const Tensor & grad_output, const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, IntArrayRef stride, IntArrayRef padding, const Tensor & finput, const Tensor & fgrad_input, std::array<bool,3> output_mask);
+  std::tuple<Tensor &,Tensor &,Tensor &> slow_conv3d_forward_out(Tensor & output, Tensor & finput, Tensor & fgrad_input, const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding);
+  std::tuple<Tensor,Tensor,Tensor> slow_conv3d_forward(const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding);
+  std::tuple<Tensor &,Tensor &,Tensor &> slow_conv3d_backward_out(Tensor & grad_input, Tensor & grad_weight, Tensor & grad_bias, const Tensor & grad_output, const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, IntArrayRef stride, IntArrayRef padding, const Tensor & finput, const Tensor & fgrad_input);
+  std::tuple<Tensor,Tensor,Tensor> slow_conv3d_backward(const Tensor & grad_output, const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, IntArrayRef stride, IntArrayRef padding, const Tensor & finput, const Tensor & fgrad_input, std::array<bool,3> output_mask);
   Tensor slow_conv_dilated2d(const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation);
   std::tuple<Tensor,Tensor,Tensor> slow_conv_dilated2d_backward(const Tensor & grad_output, const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation, std::array<bool,3> output_mask);
   Tensor slow_conv_dilated3d(const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation);

@@ -52,7 +52,7 @@ namespace SparseCPUType {
   Tensor & sspaddmm_out(Tensor & out, const Tensor & self, const Tensor & mat1, const Tensor & mat2, Scalar beta, Scalar alpha);
   Tensor native_norm(const Tensor & self, Scalar p);
   Tensor _sparse_sum_backward(const Tensor & grad, const Tensor & self, IntArrayRef dim);
-  Tensor clone(const Tensor & self);
+  Tensor clone(const Tensor & self, c10::optional<MemoryFormat> memory_format);
   Tensor & pow_out(Tensor & out, const Tensor & self, Scalar exponent);
   Tensor pow(const Tensor & self, Scalar exponent);
   Tensor & zero_(Tensor & self);

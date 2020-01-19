@@ -7,6 +7,7 @@
 #include <c10/util/ArrayRef.h>
 #include <c10/core/MemoryFormat.h>
 #include <ATen/core/EnableNamedTensor.h>
+#include <torch/csrc/api/include/torch/detail/TensorDataContainer.h>
 #include <torch/csrc/autograd/variable.h>
 #include <torch/csrc/jit/tracer.h>
 #include <torch/csrc/jit/ir.h>
@@ -21,198 +22,31 @@ using at::DimnameList;
 
 namespace torch {
 
-namespace detail {
-  enum class InitListTensorType { Scalar, InitList };
-
-  // We use `InitListTensor` to support converting an arbitrarily nested braced-init-list
-  // (e.g. {{1, 2}, {3, 4}}) into the equivalent Tensor, taking advantage of the fact that
-  // the constructor will automatically be called recursively until it reaches all innermost
-  // scalar values.
-  //
-  // At any time, a `InitListTensor` object represents either of the following:
-  // 1. A scalar with value `scalar()` and type `scalar_type()`.
-  // 2. A Tensor represented in `std::initializer_list<InitListTensor>` form, with value
-  //    `init_list()`, Tensor scalar type `scalar_type()`, and Tensor sizes `sizes()`.
-  struct InitListTensor {
-#define TENSOR(T, S)                   \
-    InitListTensor(T scalar) :         \
-        scalar_(scalar), init_list_(), \
-        sizes_(),                      \
-        scalar_type_(at::k##S),        \
-        type_(InitListTensorType::Scalar) {}
-AT_FORALL_SCALAR_TYPES_AND3(Bool, Half, BFloat16, TENSOR)
-#undef TENSOR
-    InitListTensor(std::initializer_list<InitListTensor> init_list) :
-        scalar_(),
-        init_list_(init_list),
-        sizes_(),
-        scalar_type_(),
-        type_(InitListTensorType::InitList) {
-      TORCH_CHECK(
-        init_list.size() > 0,
-        "Empty init-list is not yet supported. We can create tensors with zero-size dimensions in the following way:\n",
-        "1-D: `torch::randn({0})`\n",
-        "N-D: `torch::randn({2, 3, 0})`");
-      scalar_type_ = init_list.begin()->scalar_type_;
-      const InitListTensor& first_elem = *(init_list.begin());
-      for (const auto& elem : init_list) {
-        TORCH_CHECK(elem.scalar_type_ == first_elem.scalar_type_,
-          "Expected all elements of the tensor to have the same scalar type: ",
-          first_elem.scalar_type_,
-          ", but got element of scalar type: ",
-          elem.scalar_type_);
-        TORCH_CHECK(elem.sizes_ == first_elem.sizes_,
-          "Expected all sub-lists to have sizes: ",
-          first_elem.sizes_,
-          " (e.g. ", first_elem, "), ",
-          "but got sub-list ",
-          elem,
-          " with sizes: ",
-          elem.sizes_);
-      }
-      sizes_.reserve(first_elem.sizes_.size() + 1);
-      sizes_.push_back(init_list.size());
-      sizes_.insert(sizes_.end(), first_elem.sizes_.begin(), first_elem.sizes_.end());
-    }
-
-    const c10::Scalar& scalar() const {
-      return scalar_;
-    }
-
-    const std::initializer_list<InitListTensor>& init_list() const {
-      return init_list_;
-    }
-
-    const std::vector<int64_t>& sizes() const {
-      return sizes_;
-    }
-
-    const c10::ScalarType& scalar_type() const {
-      return scalar_type_;
-    }
-
-    const InitListTensorType& type() const {
-      return type_;
-    }
-
-    at::Tensor to_tensor(const at::TensorOptions& options) const {
-      // NOTE: Here we explicitly choose to initialize the tensor on CPU first,
-      // fill each element of the tensor, and then move the tensor to the desired
-      // device. For CUDA device, this approach only involves 1 CUDA kernel launch,
-      // and is much faster than initializing the tensor on CUDA first and then
-      // filling each element of it (which involves `N` CUDA kernel launches where
-      // `N` is the number of the elements in the tensor).
-      at::Tensor tensor = ([&]() {
-        at::AutoNonVariableTypeMode non_var_type_mode(true);
-        return at::empty(sizes_, at::TensorOptions(options).device(at::kCPU).is_variable(false));
-      })();
-      fill_tensor(tensor);
-      return tensor.to(options.device());
-    }
-
-    void pretty_print_recursive(std::ostream& stream) const {
-      if (type_ == InitListTensorType::Scalar) {
-        AT_DISPATCH_ALL_TYPES_AND3(at::kBool, at::kHalf, at::kBFloat16, scalar_type_, "InitListTensor_pretty_print_scalar", [&] {
-          stream << scalar_.to<scalar_t>();
-        });
-      } else if (type_ == InitListTensorType::InitList) {
-        stream << "{";
-        for (const InitListTensor* it = init_list_.begin(); it != init_list_.end(); it++) {
-          it->pretty_print_recursive(stream);
-          if (std::next(it) != init_list_.end()) stream << ", ";
-        }
-        stream << "}";
-      }
-    }
-
-   private:
-    void fill_tensor(at::Tensor tensor) const {
-      size_t index = 0;
-      for (const auto& elem : init_list_) {
-        if (elem.type_ == InitListTensorType::Scalar) {
-          at::NoGradGuard guard;
-          tensor[index].fill_(elem.scalar());
-        } else if (elem.type_ == InitListTensorType::InitList) {
-          elem.fill_tensor(tensor[index]);
-        } else {
-          TORCH_INTERNAL_ASSERT(false, "Invalid InitListTensor");
-        }
-        index++;
-      }
-    }
-    c10::Scalar scalar_;
-    std::initializer_list<InitListTensor> init_list_;
-    std::vector<int64_t> sizes_;
-    c10::ScalarType scalar_type_;
-    InitListTensorType type_;
-  };
-
-  inline std::ostream& operator<<(std::ostream& stream, const InitListTensor& init_list_tensor) {
-    init_list_tensor.pretty_print_recursive(stream);
-    return stream;
-  }
-} // namespace detail
-
-#define TENSOR(T, S)                                                       \
-  inline at::Tensor tensor(                                                \
-      at::ArrayRef<T> values, const at::TensorOptions& options) {          \
-    at::Tensor result = ([&]() {                                           \
-      at::AutoNonVariableTypeMode non_var_type_mode(true);                 \
-      return at::tensor(values, at::TensorOptions(options).is_variable(false)); \
-    })();                                                                  \
-    return autograd::make_variable(result, options.requires_grad());       \
-  }                                                                        \
-  inline at::Tensor tensor(                                                \
-      std::initializer_list<T> values, const at::TensorOptions& options) { \
-    return torch::tensor(at::ArrayRef<T>(values), options);                \
-  }                                                                        \
-  inline at::Tensor tensor(T value, const at::TensorOptions& options) {    \
-    return torch::tensor(at::ArrayRef<T>(value), options);                 \
-  }                                                                        \
-  inline at::Tensor tensor(at::ArrayRef<T> values) {                       \
-    return torch::tensor(std::move(values), at::dtype(at::k##S));          \
-  }                                                                        \
-  inline at::Tensor tensor(std::initializer_list<T> values) {              \
-    return torch::tensor(at::ArrayRef<T>(values));                         \
-  }                                                                        \
-  inline at::Tensor tensor(T value) {                                      \
-    return torch::tensor(at::ArrayRef<T>(value));                          \
-  }
-AT_FORALL_SCALAR_TYPES_AND3(Bool, Half, BFloat16, TENSOR)
-#undef TENSOR
-
-/// NOTE: `torch::tensor({})` doesn't work at the moment because we would need to solve the
-/// ambiguous overload problem (see https://github.com/pytorch/pytorch/pull/26210#discussion_r325336686).
-/// We can create tensors with zero-size dimensions in the following way instead:
-/// - 1-D tensor: `torch::randn({0})`
-/// - N-D tensor: `torch::randn({2, 3, 0})`
-///
 /// NOTE: Currently `torch::tensor(...)` doesn't support mixed data types
 /// (i.e. `torch::tensor({{bool, 2.0}})` doesn't work). We might be able to
 /// support it in the future by iterating over all sub-lists to find
 /// the largest data type that can represent all of the elements, or by using
 /// variadic templates.
-inline at::Tensor tensor(detail::InitListTensor init_list_tensor, const at::TensorOptions& options) {
-  return autograd::make_variable(init_list_tensor.to_tensor(options), options.requires_grad());
-}
-
-inline at::Tensor tensor(detail::InitListTensor init_list_tensor) {
-  return torch::tensor(init_list_tensor, at::dtype(init_list_tensor.scalar_type()));
-}
-
-/// NOTE: We add `torch::tensor(std::initializer_list<detail::InitListTensor>)` function overload (and its options variant),
-/// so that `torch::tensor({{1, 2}})` can take this overload instead of `torch::tensor(at::ArrayRef<T>)`.
-inline at::Tensor tensor(std::initializer_list<detail::InitListTensor> init_list, const at::TensorOptions& options) {
-  TORCH_INTERNAL_ASSERT(
-    init_list.begin()->type() != detail::InitListTensorType::Scalar,
-    "1D tensor construction such as `torch::tensor({1, 2, 3})` should never take the ",
-    "torch::tensor(std::initializer_list<detail::InitListTensor>) function overload. ",
-    "Please fix the code to avoid this regression.")
-  return torch::tensor(detail::InitListTensor(init_list), options);
-}
-
-inline at::Tensor tensor(std::initializer_list<detail::InitListTensor> init_list) {
-  return torch::tensor(init_list, at::dtype(init_list.begin()->scalar_type()));
+///
+/// NOTE: C++ `torch::tensor` by default gives a double tensor, which is
+/// different from Python `torch.tensor` that gives a float tensor by default.
+/// We are going to fix this discrepancy by making `torch::tensor` give
+/// a float tensor by default.
+/// Tracking issue: https://github.com/pytorch/pytorch/issues/28902
+///
+/// NOTE: C++ `torch::tensor` with an integer literal or a braced-init-list of
+/// integer literals always produces a tensor of dtype `at::kLong` (aka. int64_t),
+/// matching Python `torch.tensor` behavior.
+///
+/// NOTE: The following dtypes are not supported by `torch::tensor` currently:
+/// - `unsigned int`
+/// - `unsigned long int`
+/// - `unsigned long long int`
+/// - `long long int`
+inline at::Tensor tensor(detail::TensorDataContainer tensor_data_container, const at::TensorOptions& options = {}) {
+  return autograd::make_variable(
+    tensor_data_container.convert_to_tensor(options),
+    options.requires_grad());
 }
 
 /// A generic deleter function.
@@ -234,7 +68,7 @@ inline at::Tensor from_blob(
     const at::TensorOptions& options = at::TensorOptions()) {
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::from_blob(data, sizes, strides, deleter, options.is_variable(false));
+    return at::from_blob(data, sizes, strides, deleter, options);
   })();
   return autograd::make_variable(tensor, options.requires_grad());
 }
@@ -270,7 +104,7 @@ inline at::Tensor from_blob(
     const at::TensorOptions& options = at::TensorOptions()) {
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::from_blob(data, sizes, deleter, options.is_variable(false));
+    return at::from_blob(data, sizes, deleter, options);
   })();
   return autograd::make_variable(tensor, options.requires_grad());
 }
@@ -305,7 +139,7 @@ inline at::Tensor _cudnn_init_dropout_state(double dropout, bool train, int64_t 
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::_cudnn_init_dropout_state(dropout, train, dropout_seed, at::TensorOptions(options).is_variable(false));
+    return at::_cudnn_init_dropout_state(dropout, train, dropout_seed, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -332,7 +166,7 @@ inline at::Tensor arange(at::Scalar end, const at::TensorOptions & options = {})
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::arange(end, at::TensorOptions(options).is_variable(false));
+    return at::arange(end, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -360,7 +194,7 @@ inline at::Tensor arange(at::Scalar start, at::Scalar end, const at::TensorOptio
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::arange(start, end, at::TensorOptions(options).is_variable(false));
+    return at::arange(start, end, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -389,7 +223,7 @@ inline at::Tensor arange(at::Scalar start, at::Scalar end, at::Scalar step, cons
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::arange(start, end, step, at::TensorOptions(options).is_variable(false));
+    return at::arange(start, end, step, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -416,7 +250,7 @@ inline at::Tensor bartlett_window(int64_t window_length, const at::TensorOptions
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::bartlett_window(window_length, at::TensorOptions(options).is_variable(false));
+    return at::bartlett_window(window_length, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -444,7 +278,7 @@ inline at::Tensor bartlett_window(int64_t window_length, bool periodic, const at
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::bartlett_window(window_length, periodic, at::TensorOptions(options).is_variable(false));
+    return at::bartlett_window(window_length, periodic, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -471,7 +305,7 @@ inline at::Tensor blackman_window(int64_t window_length, const at::TensorOptions
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::blackman_window(window_length, at::TensorOptions(options).is_variable(false));
+    return at::blackman_window(window_length, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -499,7 +333,7 @@ inline at::Tensor blackman_window(int64_t window_length, bool periodic, const at
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::blackman_window(window_length, periodic, at::TensorOptions(options).is_variable(false));
+    return at::blackman_window(window_length, periodic, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -528,7 +362,7 @@ inline at::Tensor empty(at::IntArrayRef size, c10::optional<DimnameList> names, 
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::empty(size, names, at::TensorOptions(options).is_variable(false), memory_format);
+    return at::empty(size, names, at::TensorOptions(options), memory_format);
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -556,7 +390,7 @@ inline at::Tensor empty(at::IntArrayRef size, const at::TensorOptions & options 
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::empty(size, at::TensorOptions(options).is_variable(false), memory_format);
+    return at::empty(size, at::TensorOptions(options), memory_format);
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -586,7 +420,7 @@ inline at::Tensor _empty_affine_quantized(at::IntArrayRef size, const at::Tensor
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::_empty_affine_quantized(size, at::TensorOptions(options).is_variable(false), scale, zero_point, memory_format);
+    return at::_empty_affine_quantized(size, at::TensorOptions(options), scale, zero_point, memory_format);
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -617,7 +451,7 @@ inline at::Tensor _empty_per_channel_affine_quantized(at::IntArrayRef size, cons
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::_empty_per_channel_affine_quantized(size, scales, zero_points, axis, at::TensorOptions(options).is_variable(false), memory_format);
+    return at::_empty_per_channel_affine_quantized(size, scales, zero_points, axis, at::TensorOptions(options), memory_format);
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -627,7 +461,7 @@ inline at::Tensor _empty_per_channel_affine_quantized(at::IntArrayRef size, cons
   }
   return result;
 }
-inline at::Tensor empty_like(const at::Tensor & self) {
+inline at::Tensor empty_like(const at::Tensor & self, c10::optional<MemoryFormat> memory_format = c10::nullopt) {
   torch::jit::Node* node = nullptr;
   std::shared_ptr<jit::tracer::TracingState> tracer_state;
   if (jit::tracer::isTracing()) {
@@ -637,13 +471,14 @@ inline at::Tensor empty_like(const at::Tensor & self) {
     node = tracer_state->graph->create(op_name, /*num_outputs=*/0);
     jit::tracer::recordSourceLocation(node);
     jit::tracer::addInputs(node, "self", self);
+    jit::tracer::addInputs(node, "memory_format", memory_format);
     tracer_state->graph->insertNode(node);
   
     jit::tracer::setTracingState(nullptr);
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::empty_like(self, self.options().is_variable(false));
+    return at::empty_like(self, self.options(), memory_format);
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/false);
@@ -653,7 +488,7 @@ inline at::Tensor empty_like(const at::Tensor & self) {
   }
   return result;
 }
-inline at::Tensor empty_like(const at::Tensor & self, const at::TensorOptions & options, c10::optional<MemoryFormat> memory_format = MemoryFormat::Contiguous) {
+inline at::Tensor empty_like(const at::Tensor & self, const at::TensorOptions & options, c10::optional<MemoryFormat> memory_format = c10::nullopt) {
   torch::jit::Node* node = nullptr;
   std::shared_ptr<jit::tracer::TracingState> tracer_state;
   if (jit::tracer::isTracing()) {
@@ -671,7 +506,7 @@ inline at::Tensor empty_like(const at::Tensor & self, const at::TensorOptions & 
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::empty_like(self, at::TensorOptions(options).is_variable(false), memory_format);
+    return at::empty_like(self, at::TensorOptions(options), memory_format);
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -699,7 +534,7 @@ inline at::Tensor empty_strided(at::IntArrayRef size, at::IntArrayRef stride, co
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::empty_strided(size, stride, at::TensorOptions(options).is_variable(false));
+    return at::empty_strided(size, stride, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -726,7 +561,7 @@ inline at::Tensor eye(int64_t n, const at::TensorOptions & options = {}) {
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::eye(n, at::TensorOptions(options).is_variable(false));
+    return at::eye(n, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -754,7 +589,7 @@ inline at::Tensor eye(int64_t n, int64_t m, const at::TensorOptions & options = 
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::eye(n, m, at::TensorOptions(options).is_variable(false));
+    return at::eye(n, m, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -783,7 +618,7 @@ inline at::Tensor full(at::IntArrayRef size, at::Scalar fill_value, c10::optiona
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::full(size, fill_value, names, at::TensorOptions(options).is_variable(false));
+    return at::full(size, fill_value, names, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -811,7 +646,7 @@ inline at::Tensor full(at::IntArrayRef size, at::Scalar fill_value, const at::Te
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::full(size, fill_value, at::TensorOptions(options).is_variable(false));
+    return at::full(size, fill_value, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -821,7 +656,7 @@ inline at::Tensor full(at::IntArrayRef size, at::Scalar fill_value, const at::Te
   }
   return result;
 }
-inline at::Tensor full_like(const at::Tensor & self, at::Scalar fill_value) {
+inline at::Tensor full_like(const at::Tensor & self, at::Scalar fill_value, c10::optional<MemoryFormat> memory_format = c10::nullopt) {
   torch::jit::Node* node = nullptr;
   std::shared_ptr<jit::tracer::TracingState> tracer_state;
   if (jit::tracer::isTracing()) {
@@ -832,13 +667,14 @@ inline at::Tensor full_like(const at::Tensor & self, at::Scalar fill_value) {
     jit::tracer::recordSourceLocation(node);
     jit::tracer::addInputs(node, "self", self);
     jit::tracer::addInputs(node, "fill_value", fill_value);
+    jit::tracer::addInputs(node, "memory_format", memory_format);
     tracer_state->graph->insertNode(node);
   
     jit::tracer::setTracingState(nullptr);
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::full_like(self, fill_value, self.options().is_variable(false));
+    return at::full_like(self, fill_value, self.options(), memory_format);
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/false);
@@ -848,7 +684,7 @@ inline at::Tensor full_like(const at::Tensor & self, at::Scalar fill_value) {
   }
   return result;
 }
-inline at::Tensor full_like(const at::Tensor & self, at::Scalar fill_value, const at::TensorOptions & options) {
+inline at::Tensor full_like(const at::Tensor & self, at::Scalar fill_value, const at::TensorOptions & options, c10::optional<MemoryFormat> memory_format = c10::nullopt) {
   torch::jit::Node* node = nullptr;
   std::shared_ptr<jit::tracer::TracingState> tracer_state;
   if (jit::tracer::isTracing()) {
@@ -860,13 +696,14 @@ inline at::Tensor full_like(const at::Tensor & self, at::Scalar fill_value, cons
     jit::tracer::addInputs(node, "self", self);
     jit::tracer::addInputs(node, "fill_value", fill_value);
     jit::tracer::addInputs(node, "options", options);
+    jit::tracer::addInputs(node, "memory_format", memory_format);
     tracer_state->graph->insertNode(node);
   
     jit::tracer::setTracingState(nullptr);
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::full_like(self, fill_value, at::TensorOptions(options).is_variable(false));
+    return at::full_like(self, fill_value, at::TensorOptions(options), memory_format);
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -895,7 +732,7 @@ inline at::Tensor from_file(std::string filename, c10::optional<bool> shared = c
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::from_file(filename, shared, size, at::TensorOptions(options).is_variable(false));
+    return at::from_file(filename, shared, size, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -922,7 +759,7 @@ inline at::Tensor hann_window(int64_t window_length, const at::TensorOptions & o
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::hann_window(window_length, at::TensorOptions(options).is_variable(false));
+    return at::hann_window(window_length, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -950,7 +787,7 @@ inline at::Tensor hann_window(int64_t window_length, bool periodic, const at::Te
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::hann_window(window_length, periodic, at::TensorOptions(options).is_variable(false));
+    return at::hann_window(window_length, periodic, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -977,7 +814,7 @@ inline at::Tensor hamming_window(int64_t window_length, const at::TensorOptions 
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::hamming_window(window_length, at::TensorOptions(options).is_variable(false));
+    return at::hamming_window(window_length, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1005,7 +842,7 @@ inline at::Tensor hamming_window(int64_t window_length, bool periodic, const at:
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::hamming_window(window_length, periodic, at::TensorOptions(options).is_variable(false));
+    return at::hamming_window(window_length, periodic, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1034,7 +871,7 @@ inline at::Tensor hamming_window(int64_t window_length, bool periodic, double al
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::hamming_window(window_length, periodic, alpha, at::TensorOptions(options).is_variable(false));
+    return at::hamming_window(window_length, periodic, alpha, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1064,7 +901,7 @@ inline at::Tensor hamming_window(int64_t window_length, bool periodic, double al
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::hamming_window(window_length, periodic, alpha, beta, at::TensorOptions(options).is_variable(false));
+    return at::hamming_window(window_length, periodic, alpha, beta, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1093,7 +930,7 @@ inline at::Tensor linspace(at::Scalar start, at::Scalar end, int64_t steps = 100
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::linspace(start, end, steps, at::TensorOptions(options).is_variable(false));
+    return at::linspace(start, end, steps, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1123,7 +960,7 @@ inline at::Tensor logspace(at::Scalar start, at::Scalar end, int64_t steps = 100
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::logspace(start, end, steps, base, at::TensorOptions(options).is_variable(false));
+    return at::logspace(start, end, steps, base, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1151,7 +988,7 @@ inline at::Tensor ones(at::IntArrayRef size, c10::optional<DimnameList> names, c
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::ones(size, names, at::TensorOptions(options).is_variable(false));
+    return at::ones(size, names, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1178,7 +1015,7 @@ inline at::Tensor ones(at::IntArrayRef size, const at::TensorOptions & options =
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::ones(size, at::TensorOptions(options).is_variable(false));
+    return at::ones(size, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1188,7 +1025,7 @@ inline at::Tensor ones(at::IntArrayRef size, const at::TensorOptions & options =
   }
   return result;
 }
-inline at::Tensor ones_like(const at::Tensor & self) {
+inline at::Tensor ones_like(const at::Tensor & self, c10::optional<MemoryFormat> memory_format = c10::nullopt) {
   torch::jit::Node* node = nullptr;
   std::shared_ptr<jit::tracer::TracingState> tracer_state;
   if (jit::tracer::isTracing()) {
@@ -1198,13 +1035,14 @@ inline at::Tensor ones_like(const at::Tensor & self) {
     node = tracer_state->graph->create(op_name, /*num_outputs=*/0);
     jit::tracer::recordSourceLocation(node);
     jit::tracer::addInputs(node, "self", self);
+    jit::tracer::addInputs(node, "memory_format", memory_format);
     tracer_state->graph->insertNode(node);
   
     jit::tracer::setTracingState(nullptr);
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::ones_like(self, self.options().is_variable(false));
+    return at::ones_like(self, self.options(), memory_format);
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/false);
@@ -1214,7 +1052,7 @@ inline at::Tensor ones_like(const at::Tensor & self) {
   }
   return result;
 }
-inline at::Tensor ones_like(const at::Tensor & self, const at::TensorOptions & options) {
+inline at::Tensor ones_like(const at::Tensor & self, const at::TensorOptions & options, c10::optional<MemoryFormat> memory_format = c10::nullopt) {
   torch::jit::Node* node = nullptr;
   std::shared_ptr<jit::tracer::TracingState> tracer_state;
   if (jit::tracer::isTracing()) {
@@ -1225,13 +1063,14 @@ inline at::Tensor ones_like(const at::Tensor & self, const at::TensorOptions & o
     jit::tracer::recordSourceLocation(node);
     jit::tracer::addInputs(node, "self", self);
     jit::tracer::addInputs(node, "options", options);
+    jit::tracer::addInputs(node, "memory_format", memory_format);
     tracer_state->graph->insertNode(node);
   
     jit::tracer::setTracingState(nullptr);
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::ones_like(self, at::TensorOptions(options).is_variable(false));
+    return at::ones_like(self, at::TensorOptions(options), memory_format);
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1258,7 +1097,7 @@ inline at::Tensor scalar_tensor(at::Scalar s, const at::TensorOptions & options 
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::scalar_tensor(s, at::TensorOptions(options).is_variable(false));
+    return at::scalar_tensor(s, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1286,7 +1125,7 @@ inline at::Tensor rand(at::IntArrayRef size, c10::optional<DimnameList> names, c
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::rand(size, names, at::TensorOptions(options).is_variable(false));
+    return at::rand(size, names, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1315,7 +1154,7 @@ inline at::Tensor rand(at::IntArrayRef size, at::Generator * generator, c10::opt
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::rand(size, generator, names, at::TensorOptions(options).is_variable(false));
+    return at::rand(size, generator, names, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1342,7 +1181,7 @@ inline at::Tensor rand(at::IntArrayRef size, const at::TensorOptions & options =
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::rand(size, at::TensorOptions(options).is_variable(false));
+    return at::rand(size, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1370,7 +1209,7 @@ inline at::Tensor rand(at::IntArrayRef size, at::Generator * generator, const at
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::rand(size, generator, at::TensorOptions(options).is_variable(false));
+    return at::rand(size, generator, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1380,7 +1219,7 @@ inline at::Tensor rand(at::IntArrayRef size, at::Generator * generator, const at
   }
   return result;
 }
-inline at::Tensor rand_like(const at::Tensor & self) {
+inline at::Tensor rand_like(const at::Tensor & self, c10::optional<MemoryFormat> memory_format = c10::nullopt) {
   torch::jit::Node* node = nullptr;
   std::shared_ptr<jit::tracer::TracingState> tracer_state;
   if (jit::tracer::isTracing()) {
@@ -1390,13 +1229,14 @@ inline at::Tensor rand_like(const at::Tensor & self) {
     node = tracer_state->graph->create(op_name, /*num_outputs=*/0);
     jit::tracer::recordSourceLocation(node);
     jit::tracer::addInputs(node, "self", self);
+    jit::tracer::addInputs(node, "memory_format", memory_format);
     tracer_state->graph->insertNode(node);
   
     jit::tracer::setTracingState(nullptr);
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::rand_like(self, self.options().is_variable(false));
+    return at::rand_like(self, self.options(), memory_format);
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/false);
@@ -1406,7 +1246,7 @@ inline at::Tensor rand_like(const at::Tensor & self) {
   }
   return result;
 }
-inline at::Tensor rand_like(const at::Tensor & self, const at::TensorOptions & options) {
+inline at::Tensor rand_like(const at::Tensor & self, const at::TensorOptions & options, c10::optional<MemoryFormat> memory_format = c10::nullopt) {
   torch::jit::Node* node = nullptr;
   std::shared_ptr<jit::tracer::TracingState> tracer_state;
   if (jit::tracer::isTracing()) {
@@ -1417,13 +1257,14 @@ inline at::Tensor rand_like(const at::Tensor & self, const at::TensorOptions & o
     jit::tracer::recordSourceLocation(node);
     jit::tracer::addInputs(node, "self", self);
     jit::tracer::addInputs(node, "options", options);
+    jit::tracer::addInputs(node, "memory_format", memory_format);
     tracer_state->graph->insertNode(node);
   
     jit::tracer::setTracingState(nullptr);
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::rand_like(self, at::TensorOptions(options).is_variable(false));
+    return at::rand_like(self, at::TensorOptions(options), memory_format);
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1451,7 +1292,7 @@ inline at::Tensor randint(int64_t high, at::IntArrayRef size, const at::TensorOp
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::randint(high, size, at::TensorOptions(options).is_variable(false));
+    return at::randint(high, size, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1480,7 +1321,7 @@ inline at::Tensor randint(int64_t high, at::IntArrayRef size, at::Generator * ge
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::randint(high, size, generator, at::TensorOptions(options).is_variable(false));
+    return at::randint(high, size, generator, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1509,7 +1350,7 @@ inline at::Tensor randint(int64_t low, int64_t high, at::IntArrayRef size, const
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::randint(low, high, size, at::TensorOptions(options).is_variable(false));
+    return at::randint(low, high, size, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1539,7 +1380,7 @@ inline at::Tensor randint(int64_t low, int64_t high, at::IntArrayRef size, at::G
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::randint(low, high, size, generator, at::TensorOptions(options).is_variable(false));
+    return at::randint(low, high, size, generator, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1549,7 +1390,7 @@ inline at::Tensor randint(int64_t low, int64_t high, at::IntArrayRef size, at::G
   }
   return result;
 }
-inline at::Tensor randint_like(const at::Tensor & self, int64_t high) {
+inline at::Tensor randint_like(const at::Tensor & self, int64_t high, c10::optional<MemoryFormat> memory_format = c10::nullopt) {
   torch::jit::Node* node = nullptr;
   std::shared_ptr<jit::tracer::TracingState> tracer_state;
   if (jit::tracer::isTracing()) {
@@ -1560,13 +1401,14 @@ inline at::Tensor randint_like(const at::Tensor & self, int64_t high) {
     jit::tracer::recordSourceLocation(node);
     jit::tracer::addInputs(node, "self", self);
     jit::tracer::addInputs(node, "high", high);
+    jit::tracer::addInputs(node, "memory_format", memory_format);
     tracer_state->graph->insertNode(node);
   
     jit::tracer::setTracingState(nullptr);
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::randint_like(self, high, self.options().is_variable(false));
+    return at::randint_like(self, high, self.options(), memory_format);
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/false);
@@ -1576,7 +1418,7 @@ inline at::Tensor randint_like(const at::Tensor & self, int64_t high) {
   }
   return result;
 }
-inline at::Tensor randint_like(const at::Tensor & self, int64_t low, int64_t high) {
+inline at::Tensor randint_like(const at::Tensor & self, int64_t low, int64_t high, c10::optional<MemoryFormat> memory_format = c10::nullopt) {
   torch::jit::Node* node = nullptr;
   std::shared_ptr<jit::tracer::TracingState> tracer_state;
   if (jit::tracer::isTracing()) {
@@ -1588,13 +1430,14 @@ inline at::Tensor randint_like(const at::Tensor & self, int64_t low, int64_t hig
     jit::tracer::addInputs(node, "self", self);
     jit::tracer::addInputs(node, "low", low);
     jit::tracer::addInputs(node, "high", high);
+    jit::tracer::addInputs(node, "memory_format", memory_format);
     tracer_state->graph->insertNode(node);
   
     jit::tracer::setTracingState(nullptr);
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::randint_like(self, low, high, self.options().is_variable(false));
+    return at::randint_like(self, low, high, self.options(), memory_format);
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/false);
@@ -1604,7 +1447,7 @@ inline at::Tensor randint_like(const at::Tensor & self, int64_t low, int64_t hig
   }
   return result;
 }
-inline at::Tensor randint_like(const at::Tensor & self, int64_t high, const at::TensorOptions & options) {
+inline at::Tensor randint_like(const at::Tensor & self, int64_t high, const at::TensorOptions & options, c10::optional<MemoryFormat> memory_format = c10::nullopt) {
   torch::jit::Node* node = nullptr;
   std::shared_ptr<jit::tracer::TracingState> tracer_state;
   if (jit::tracer::isTracing()) {
@@ -1616,13 +1459,14 @@ inline at::Tensor randint_like(const at::Tensor & self, int64_t high, const at::
     jit::tracer::addInputs(node, "self", self);
     jit::tracer::addInputs(node, "high", high);
     jit::tracer::addInputs(node, "options", options);
+    jit::tracer::addInputs(node, "memory_format", memory_format);
     tracer_state->graph->insertNode(node);
   
     jit::tracer::setTracingState(nullptr);
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::randint_like(self, high, at::TensorOptions(options).is_variable(false));
+    return at::randint_like(self, high, at::TensorOptions(options), memory_format);
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1632,7 +1476,7 @@ inline at::Tensor randint_like(const at::Tensor & self, int64_t high, const at::
   }
   return result;
 }
-inline at::Tensor randint_like(const at::Tensor & self, int64_t low, int64_t high, const at::TensorOptions & options) {
+inline at::Tensor randint_like(const at::Tensor & self, int64_t low, int64_t high, const at::TensorOptions & options, c10::optional<MemoryFormat> memory_format = c10::nullopt) {
   torch::jit::Node* node = nullptr;
   std::shared_ptr<jit::tracer::TracingState> tracer_state;
   if (jit::tracer::isTracing()) {
@@ -1645,13 +1489,14 @@ inline at::Tensor randint_like(const at::Tensor & self, int64_t low, int64_t hig
     jit::tracer::addInputs(node, "low", low);
     jit::tracer::addInputs(node, "high", high);
     jit::tracer::addInputs(node, "options", options);
+    jit::tracer::addInputs(node, "memory_format", memory_format);
     tracer_state->graph->insertNode(node);
   
     jit::tracer::setTracingState(nullptr);
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::randint_like(self, low, high, at::TensorOptions(options).is_variable(false));
+    return at::randint_like(self, low, high, at::TensorOptions(options), memory_format);
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1678,7 +1523,7 @@ inline at::Tensor randn(at::IntArrayRef size, const at::TensorOptions & options 
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::randn(size, at::TensorOptions(options).is_variable(false));
+    return at::randn(size, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1706,7 +1551,7 @@ inline at::Tensor randn(at::IntArrayRef size, at::Generator * generator, const a
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::randn(size, generator, at::TensorOptions(options).is_variable(false));
+    return at::randn(size, generator, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1734,7 +1579,7 @@ inline at::Tensor randn(at::IntArrayRef size, c10::optional<DimnameList> names, 
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::randn(size, names, at::TensorOptions(options).is_variable(false));
+    return at::randn(size, names, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1763,7 +1608,7 @@ inline at::Tensor randn(at::IntArrayRef size, at::Generator * generator, c10::op
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::randn(size, generator, names, at::TensorOptions(options).is_variable(false));
+    return at::randn(size, generator, names, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1773,7 +1618,7 @@ inline at::Tensor randn(at::IntArrayRef size, at::Generator * generator, c10::op
   }
   return result;
 }
-inline at::Tensor randn_like(const at::Tensor & self) {
+inline at::Tensor randn_like(const at::Tensor & self, c10::optional<MemoryFormat> memory_format = c10::nullopt) {
   torch::jit::Node* node = nullptr;
   std::shared_ptr<jit::tracer::TracingState> tracer_state;
   if (jit::tracer::isTracing()) {
@@ -1783,13 +1628,14 @@ inline at::Tensor randn_like(const at::Tensor & self) {
     node = tracer_state->graph->create(op_name, /*num_outputs=*/0);
     jit::tracer::recordSourceLocation(node);
     jit::tracer::addInputs(node, "self", self);
+    jit::tracer::addInputs(node, "memory_format", memory_format);
     tracer_state->graph->insertNode(node);
   
     jit::tracer::setTracingState(nullptr);
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::randn_like(self, self.options().is_variable(false));
+    return at::randn_like(self, self.options(), memory_format);
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/false);
@@ -1799,7 +1645,7 @@ inline at::Tensor randn_like(const at::Tensor & self) {
   }
   return result;
 }
-inline at::Tensor randn_like(const at::Tensor & self, const at::TensorOptions & options) {
+inline at::Tensor randn_like(const at::Tensor & self, const at::TensorOptions & options, c10::optional<MemoryFormat> memory_format = c10::nullopt) {
   torch::jit::Node* node = nullptr;
   std::shared_ptr<jit::tracer::TracingState> tracer_state;
   if (jit::tracer::isTracing()) {
@@ -1810,13 +1656,14 @@ inline at::Tensor randn_like(const at::Tensor & self, const at::TensorOptions & 
     jit::tracer::recordSourceLocation(node);
     jit::tracer::addInputs(node, "self", self);
     jit::tracer::addInputs(node, "options", options);
+    jit::tracer::addInputs(node, "memory_format", memory_format);
     tracer_state->graph->insertNode(node);
   
     jit::tracer::setTracingState(nullptr);
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::randn_like(self, at::TensorOptions(options).is_variable(false));
+    return at::randn_like(self, at::TensorOptions(options), memory_format);
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1843,7 +1690,7 @@ inline at::Tensor randperm(int64_t n, const at::TensorOptions & options = {}) {
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::randperm(n, at::TensorOptions(options).is_variable(false));
+    return at::randperm(n, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1871,7 +1718,7 @@ inline at::Tensor randperm(int64_t n, at::Generator * generator, const at::Tenso
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::randperm(n, generator, at::TensorOptions(options).is_variable(false));
+    return at::randperm(n, generator, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1900,7 +1747,7 @@ inline at::Tensor range(at::Scalar start, at::Scalar end, at::Scalar step = 1, c
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::range(start, end, step, at::TensorOptions(options).is_variable(false));
+    return at::range(start, end, step, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1928,7 +1775,7 @@ inline at::Tensor range(at::Scalar start, at::Scalar end, const at::TensorOption
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::range(start, end, at::TensorOptions(options).is_variable(false));
+    return at::range(start, end, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1956,7 +1803,7 @@ inline at::Tensor zeros(at::IntArrayRef size, c10::optional<DimnameList> names, 
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::zeros(size, names, at::TensorOptions(options).is_variable(false));
+    return at::zeros(size, names, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1983,7 +1830,7 @@ inline at::Tensor zeros(at::IntArrayRef size, const at::TensorOptions & options 
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::zeros(size, at::TensorOptions(options).is_variable(false));
+    return at::zeros(size, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1993,7 +1840,7 @@ inline at::Tensor zeros(at::IntArrayRef size, const at::TensorOptions & options 
   }
   return result;
 }
-inline at::Tensor zeros_like(const at::Tensor & self) {
+inline at::Tensor zeros_like(const at::Tensor & self, c10::optional<MemoryFormat> memory_format = c10::nullopt) {
   torch::jit::Node* node = nullptr;
   std::shared_ptr<jit::tracer::TracingState> tracer_state;
   if (jit::tracer::isTracing()) {
@@ -2003,13 +1850,14 @@ inline at::Tensor zeros_like(const at::Tensor & self) {
     node = tracer_state->graph->create(op_name, /*num_outputs=*/0);
     jit::tracer::recordSourceLocation(node);
     jit::tracer::addInputs(node, "self", self);
+    jit::tracer::addInputs(node, "memory_format", memory_format);
     tracer_state->graph->insertNode(node);
   
     jit::tracer::setTracingState(nullptr);
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::zeros_like(self, self.options().is_variable(false));
+    return at::zeros_like(self, self.options(), memory_format);
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/false);
@@ -2019,7 +1867,7 @@ inline at::Tensor zeros_like(const at::Tensor & self) {
   }
   return result;
 }
-inline at::Tensor zeros_like(const at::Tensor & self, const at::TensorOptions & options) {
+inline at::Tensor zeros_like(const at::Tensor & self, const at::TensorOptions & options, c10::optional<MemoryFormat> memory_format = c10::nullopt) {
   torch::jit::Node* node = nullptr;
   std::shared_ptr<jit::tracer::TracingState> tracer_state;
   if (jit::tracer::isTracing()) {
@@ -2030,13 +1878,14 @@ inline at::Tensor zeros_like(const at::Tensor & self, const at::TensorOptions & 
     jit::tracer::recordSourceLocation(node);
     jit::tracer::addInputs(node, "self", self);
     jit::tracer::addInputs(node, "options", options);
+    jit::tracer::addInputs(node, "memory_format", memory_format);
     tracer_state->graph->insertNode(node);
   
     jit::tracer::setTracingState(nullptr);
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::zeros_like(self, at::TensorOptions(options).is_variable(false));
+    return at::zeros_like(self, at::TensorOptions(options), memory_format);
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -2063,7 +1912,7 @@ inline at::Tensor sparse_coo_tensor(at::IntArrayRef size, const at::TensorOption
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::sparse_coo_tensor(size, at::TensorOptions(options).is_variable(false));
+    return at::sparse_coo_tensor(size, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -2091,7 +1940,7 @@ inline at::Tensor sparse_coo_tensor(const at::Tensor & indices, const at::Tensor
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::sparse_coo_tensor(indices, values, at::TensorOptions(options).is_variable(false));
+    return at::sparse_coo_tensor(indices, values, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -2120,7 +1969,7 @@ inline at::Tensor sparse_coo_tensor(const at::Tensor & indices, const at::Tensor
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::sparse_coo_tensor(indices, values, size, at::TensorOptions(options).is_variable(false));
+    return at::sparse_coo_tensor(indices, values, size, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -2149,7 +1998,7 @@ inline at::Tensor _sparse_coo_tensor_unsafe(const at::Tensor & indices, const at
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::_sparse_coo_tensor_unsafe(indices, values, size, at::TensorOptions(options).is_variable(false));
+    return at::_sparse_coo_tensor_unsafe(indices, values, size, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -2178,7 +2027,7 @@ inline at::Tensor _sparse_coo_tensor_with_dims(int64_t sparse_dim, int64_t dense
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::_sparse_coo_tensor_with_dims(sparse_dim, dense_dim, size, at::TensorOptions(options).is_variable(false));
+    return at::_sparse_coo_tensor_with_dims(sparse_dim, dense_dim, size, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -2209,7 +2058,7 @@ inline at::Tensor _sparse_coo_tensor_with_dims_and_tensors(int64_t sparse_dim, i
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::_sparse_coo_tensor_with_dims_and_tensors(sparse_dim, dense_dim, size, indices, values, at::TensorOptions(options).is_variable(false));
+    return at::_sparse_coo_tensor_with_dims_and_tensors(sparse_dim, dense_dim, size, indices, values, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -2238,7 +2087,7 @@ inline at::Tensor tril_indices(int64_t row, int64_t col, int64_t offset = 0, con
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::tril_indices(row, col, offset, at::TensorOptions(options).is_variable(false));
+    return at::tril_indices(row, col, offset, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -2267,7 +2116,7 @@ inline at::Tensor triu_indices(int64_t row, int64_t col, int64_t offset = 0, con
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::triu_indices(row, col, offset, at::TensorOptions(options).is_variable(false));
+    return at::triu_indices(row, col, offset, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -2297,7 +2146,7 @@ inline at::Tensor normal(double mean, double std, at::IntArrayRef size, at::Gene
   }
   at::Tensor tensor = ([&]() {
     at::AutoNonVariableTypeMode non_var_type_mode(true);
-    return at::normal(mean, std, size, generator, at::TensorOptions(options).is_variable(false));
+    return at::normal(mean, std, size, generator, at::TensorOptions(options));
   })();
   at::Tensor result =
     autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());

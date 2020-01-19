@@ -45,6 +45,7 @@ namespace TypeDefault {
   bool is_leaf(const Tensor & self);
   int64_t output_nr(const Tensor & self);
   int64_t _version(const Tensor & self);
+  Tensor & requires_grad_(Tensor & self, bool _requires_grad);
   #ifdef BUILD_NAMEDTENSOR
   Tensor & rename_(Tensor & self, c10::optional<DimnameList> names);
   #endif
@@ -53,6 +54,9 @@ namespace TypeDefault {
   #endif
   #ifdef BUILD_NAMEDTENSOR
   Tensor align_to(const Tensor & self, DimnameList names);
+  #endif
+  #ifdef BUILD_NAMEDTENSOR
+  Tensor align_to(const Tensor & self, DimnameList order, int64_t ellipsis_idx);
   #endif
   #ifdef BUILD_NAMEDTENSOR
   Tensor align_as(const Tensor & self, const Tensor & other);
@@ -85,7 +89,15 @@ namespace TypeDefault {
   Tensor feature_alpha_dropout(const Tensor & input, double p, bool train);
   Tensor & feature_alpha_dropout_(Tensor & self, double p, bool train);
   Tensor abs(const Tensor & self);
+  Tensor & abs_(Tensor & self);
+  Tensor & abs_out(Tensor & out, const Tensor & self);
+  Tensor angle(const Tensor & self);
+  Tensor real(const Tensor & self);
+  Tensor imag(const Tensor & self);
+  Tensor conj(const Tensor & self);
   Tensor acos(const Tensor & self);
+  Tensor & acos_(Tensor & self);
+  Tensor & acos_out(Tensor & out, const Tensor & self);
   Tensor avg_pool1d(const Tensor & self, IntArrayRef kernel_size, IntArrayRef stride, IntArrayRef padding, bool ceil_mode, bool count_include_pad);
   Tensor adaptive_avg_pool1d(const Tensor & self, IntArrayRef output_size);
   std::tuple<Tensor,Tensor> adaptive_max_pool1d(const Tensor & self, IntArrayRef output_size);
@@ -122,13 +134,15 @@ namespace TypeDefault {
   Tensor argmin(const Tensor & self, c10::optional<int64_t> dim, bool keepdim);
   Tensor & as_strided_(Tensor & self, IntArrayRef size, IntArrayRef stride, c10::optional<int64_t> storage_offset);
   Tensor asin(const Tensor & self);
+  Tensor & asin_(Tensor & self);
+  Tensor & asin_out(Tensor & out, const Tensor & self);
   Tensor atan(const Tensor & self);
   Tensor & _baddbmm_mkl_(Tensor & self, const Tensor & batch1, const Tensor & batch2, Scalar beta, Scalar alpha);
   Tensor bartlett_window(int64_t window_length, const TensorOptions & options);
   Tensor bartlett_window(int64_t window_length, bool periodic, const TensorOptions & options);
   Tensor batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps, bool cudnn_enabled);
-  std::tuple<Tensor,Tensor,Tensor,int64_t> _batch_norm_impl_index(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps, bool cudnn_enabled);
-  std::tuple<Tensor,Tensor,Tensor> _batch_norm_impl_index_backward(int64_t impl_index, const Tensor & input, const Tensor & grad_output, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, const Tensor & save_mean, const Tensor & save_var_transform, bool train, double eps, std::array<bool,3> output_mask);
+  std::tuple<Tensor,Tensor,Tensor,Tensor,int64_t> _batch_norm_impl_index(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps, bool cudnn_enabled);
+  std::tuple<Tensor,Tensor,Tensor> _batch_norm_impl_index_backward(int64_t impl_index, const Tensor & input, const Tensor & grad_output, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, const Tensor & save_mean, const Tensor & save_var_transform, bool train, double eps, std::array<bool,3> output_mask, const Tensor & reservedSpace);
   Tensor bernoulli(const Tensor & self, Generator * generator);
   Tensor & bernoulli_out(Tensor & out, const Tensor & self, Generator * generator);
   Tensor bernoulli(const Tensor & self, double p, Generator * generator);
@@ -218,8 +232,9 @@ namespace TypeDefault {
   #endif
   Tensor new_empty(const Tensor & self, IntArrayRef size, const TensorOptions & options);
   Tensor new_full(const Tensor & self, IntArrayRef size, Scalar fill_value, const TensorOptions & options);
+  Tensor new_zeros(const Tensor & self, IntArrayRef size, const TensorOptions & options);
   Tensor & empty_out(Tensor & out, IntArrayRef size, c10::optional<MemoryFormat> memory_format);
-  Tensor empty_like(const Tensor & self);
+  Tensor empty_like(const Tensor & self, c10::optional<MemoryFormat> memory_format);
   Tensor empty_like(const Tensor & self, const TensorOptions & options, c10::optional<MemoryFormat> memory_format);
   Tensor erf(const Tensor & self);
   Tensor erfc(const Tensor & self);
@@ -245,13 +260,15 @@ namespace TypeDefault {
   Tensor floor(const Tensor & self);
   Tensor & floor_(Tensor & self);
   Tensor frac(const Tensor & self);
+  Tensor & frac_(Tensor & self);
+  Tensor & frac_out(Tensor & out, const Tensor & self);
   #ifdef BUILD_NAMEDTENSOR
   Tensor full(IntArrayRef size, Scalar fill_value, c10::optional<DimnameList> names, const TensorOptions & options);
   #endif
   Tensor full(IntArrayRef size, Scalar fill_value, const TensorOptions & options);
   Tensor & full_out(Tensor & out, IntArrayRef size, Scalar fill_value);
-  Tensor full_like(const Tensor & self, Scalar fill_value);
-  Tensor full_like(const Tensor & self, Scalar fill_value, const TensorOptions & options);
+  Tensor full_like(const Tensor & self, Scalar fill_value, c10::optional<MemoryFormat> memory_format);
+  Tensor full_like(const Tensor & self, Scalar fill_value, const TensorOptions & options, c10::optional<MemoryFormat> memory_format);
   Tensor grid_sampler(const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners);
   Tensor hann_window(int64_t window_length, const TensorOptions & options);
   Tensor hann_window(int64_t window_length, bool periodic, const TensorOptions & options);
@@ -314,8 +331,10 @@ namespace TypeDefault {
   Tensor log(const Tensor & self);
   Tensor & log_(Tensor & self);
   Tensor log10(const Tensor & self);
+  Tensor & log10_(Tensor & self);
   Tensor log1p(const Tensor & self);
   Tensor log2(const Tensor & self);
+  Tensor & log2_(Tensor & self);
   Tensor logdet(const Tensor & self);
   Tensor logspace(Scalar start, Scalar end, int64_t steps, double base, const TensorOptions & options);
   Tensor log_softmax(const Tensor & self, int64_t dim, c10::optional<ScalarType> dtype);
@@ -352,6 +371,12 @@ namespace TypeDefault {
   Tensor max_pool1d(const Tensor & self, IntArrayRef kernel_size, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation, bool ceil_mode);
   Tensor max_pool2d(const Tensor & self, IntArrayRef kernel_size, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation, bool ceil_mode);
   Tensor max_pool3d(const Tensor & self, IntArrayRef kernel_size, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation, bool ceil_mode);
+  #ifdef BUILD_NAMEDTENSOR
+  Tensor mean(const Tensor & self, DimnameList dim, bool keepdim, c10::optional<ScalarType> dtype);
+  #endif
+  #ifdef BUILD_NAMEDTENSOR
+  Tensor & mean_out(Tensor & out, const Tensor & self, DimnameList dim, bool keepdim, c10::optional<ScalarType> dtype);
+  #endif
   std::tuple<Tensor,Tensor> median(const Tensor & self, int64_t dim, bool keepdim);
   std::tuple<Tensor &,Tensor &> median_out(Tensor & values, Tensor & indices, const Tensor & self, int64_t dim, bool keepdim);
   #ifdef BUILD_NAMEDTENSOR
@@ -391,7 +416,7 @@ namespace TypeDefault {
   Tensor & mvlgamma_(Tensor & self, int64_t p);
   Tensor narrow(const Tensor & self, int64_t dim, int64_t start, int64_t length);
   bool _nnpack_available();
-  Tensor _nnpack_spatial_convolution(const Tensor & input, const Tensor & weight, const Tensor & bias, IntArrayRef padding);
+  Tensor _nnpack_spatial_convolution(const Tensor & input, const Tensor & weight, const Tensor & bias, IntArrayRef padding, IntArrayRef stride);
   std::tuple<Tensor,Tensor,Tensor> _nnpack_spatial_convolution_backward(const Tensor & input, const Tensor & grad_output, const Tensor & weight, IntArrayRef padding, std::array<bool,3> output_mask);
   Tensor _nnpack_spatial_convolution_backward_input(const Tensor & input, const Tensor & grad_output, const Tensor & weight, IntArrayRef padding);
   Tensor _nnpack_spatial_convolution_backward_weight(const Tensor & input, IntArrayRef weightsize, const Tensor & grad_output, IntArrayRef padding);
@@ -400,10 +425,10 @@ namespace TypeDefault {
   #endif
   Tensor ones(IntArrayRef size, const TensorOptions & options);
   Tensor & ones_out(Tensor & out, IntArrayRef size);
-  Tensor ones_like(const Tensor & self);
-  Tensor ones_like(const Tensor & self, const TensorOptions & options);
+  Tensor ones_like(const Tensor & self, c10::optional<MemoryFormat> memory_format);
+  Tensor ones_like(const Tensor & self, const TensorOptions & options, c10::optional<MemoryFormat> memory_format);
   Tensor pairwise_distance(const Tensor & x1, const Tensor & x2, double p, double eps, bool keepdim);
-  Tensor cdist(const Tensor & x1, const Tensor & x2, double p);
+  Tensor cdist(const Tensor & x1, const Tensor & x2, double p, c10::optional<int64_t> compute_mode);
   Tensor _cdist_backward(const Tensor & grad, const Tensor & x1, const Tensor & x2, double p, const Tensor & cdist);
   Tensor pdist(const Tensor & self, double p);
   Tensor _pdist_forward(const Tensor & self, double p);
@@ -427,8 +452,8 @@ namespace TypeDefault {
   Tensor rand(IntArrayRef size, Generator * generator, const TensorOptions & options);
   Tensor & rand_out(Tensor & out, IntArrayRef size);
   Tensor & rand_out(Tensor & out, IntArrayRef size, Generator * generator);
-  Tensor rand_like(const Tensor & self);
-  Tensor rand_like(const Tensor & self, const TensorOptions & options);
+  Tensor rand_like(const Tensor & self, c10::optional<MemoryFormat> memory_format);
+  Tensor rand_like(const Tensor & self, const TensorOptions & options, c10::optional<MemoryFormat> memory_format);
   Tensor randint(int64_t high, IntArrayRef size, const TensorOptions & options);
   Tensor randint(int64_t high, IntArrayRef size, Generator * generator, const TensorOptions & options);
   Tensor randint(int64_t low, int64_t high, IntArrayRef size, const TensorOptions & options);
@@ -437,10 +462,10 @@ namespace TypeDefault {
   Tensor & randint_out(Tensor & out, int64_t high, IntArrayRef size, Generator * generator);
   Tensor & randint_out(Tensor & out, int64_t low, int64_t high, IntArrayRef size);
   Tensor & randint_out(Tensor & out, int64_t low, int64_t high, IntArrayRef size, Generator * generator);
-  Tensor randint_like(const Tensor & self, int64_t high);
-  Tensor randint_like(const Tensor & self, int64_t low, int64_t high);
-  Tensor randint_like(const Tensor & self, int64_t high, const TensorOptions & options);
-  Tensor randint_like(const Tensor & self, int64_t low, int64_t high, const TensorOptions & options);
+  Tensor randint_like(const Tensor & self, int64_t high, c10::optional<MemoryFormat> memory_format);
+  Tensor randint_like(const Tensor & self, int64_t low, int64_t high, c10::optional<MemoryFormat> memory_format);
+  Tensor randint_like(const Tensor & self, int64_t high, const TensorOptions & options, c10::optional<MemoryFormat> memory_format);
+  Tensor randint_like(const Tensor & self, int64_t low, int64_t high, const TensorOptions & options, c10::optional<MemoryFormat> memory_format);
   Tensor randn(IntArrayRef size, const TensorOptions & options);
   Tensor randn(IntArrayRef size, Generator * generator, const TensorOptions & options);
   #ifdef BUILD_NAMEDTENSOR
@@ -451,8 +476,8 @@ namespace TypeDefault {
   #endif
   Tensor & randn_out(Tensor & out, IntArrayRef size);
   Tensor & randn_out(Tensor & out, IntArrayRef size, Generator * generator);
-  Tensor randn_like(const Tensor & self);
-  Tensor randn_like(const Tensor & self, const TensorOptions & options);
+  Tensor randn_like(const Tensor & self, c10::optional<MemoryFormat> memory_format);
+  Tensor randn_like(const Tensor & self, const TensorOptions & options, c10::optional<MemoryFormat> memory_format);
   Tensor randperm(int64_t n, const TensorOptions & options);
   Tensor randperm(int64_t n, Generator * generator, const TensorOptions & options);
   Tensor & randperm_out(Tensor & out, int64_t n);
@@ -480,8 +505,12 @@ namespace TypeDefault {
   Tensor & selu_(Tensor & self);
   Tensor celu(const Tensor & self, Scalar alpha);
   Tensor & celu_(Tensor & self, Scalar alpha);
+  Tensor & sigmoid_out(Tensor & out, const Tensor & self);
   Tensor sin(const Tensor & self);
+  Tensor & sin_(Tensor & self);
   Tensor sinh(const Tensor & self);
+  Tensor & sinh_(Tensor & self);
+  Tensor & sinh_out(Tensor & out, const Tensor & self);
   Tensor detach(const Tensor & self);
   Tensor & detach_(Tensor & self);
   int64_t size(const Tensor & self, int64_t dim);
@@ -526,6 +555,8 @@ namespace TypeDefault {
   #endif
   Tensor sum_to_size(const Tensor & self, IntArrayRef size);
   Tensor sqrt(const Tensor & self);
+  Tensor & sqrt_(Tensor & self);
+  Tensor & sqrt_out(Tensor & out, const Tensor & self);
   Tensor std(const Tensor & self, bool unbiased);
   Tensor std(const Tensor & self, IntArrayRef dim, bool unbiased, bool keepdim);
   std::tuple<Tensor,Tensor> std_mean(const Tensor & self, bool unbiased);
@@ -601,8 +632,8 @@ namespace TypeDefault {
   #endif
   Tensor zeros(IntArrayRef size, const TensorOptions & options);
   Tensor & zeros_out(Tensor & out, IntArrayRef size);
-  Tensor zeros_like(const Tensor & self);
-  Tensor zeros_like(const Tensor & self, const TensorOptions & options);
+  Tensor zeros_like(const Tensor & self, c10::optional<MemoryFormat> memory_format);
+  Tensor zeros_like(const Tensor & self, const TensorOptions & options, c10::optional<MemoryFormat> memory_format);
   Tensor _sparse_sum(const Tensor & self);
   Tensor _sparse_sum(const Tensor & self, ScalarType dtype);
   Tensor _sparse_sum(const Tensor & self, IntArrayRef dim);
@@ -632,7 +663,7 @@ namespace TypeDefault {
   Tensor & nuclear_norm_out(Tensor & out, const Tensor & self, bool keepdim);
   Tensor nuclear_norm(const Tensor & self, IntArrayRef dim, bool keepdim);
   Tensor & nuclear_norm_out(Tensor & out, const Tensor & self, IntArrayRef dim, bool keepdim);
-  Tensor & resize_as_(Tensor & self, const Tensor & the_template);
+  Tensor & resize_as_(Tensor & self, const Tensor & the_template, c10::optional<MemoryFormat> memory_format);
   Tensor sub(const Tensor & self, Scalar other, Scalar alpha);
   Tensor & sub_(Tensor & self, Scalar other, Scalar alpha);
   Tensor rsub(const Tensor & self, const Tensor & other, Scalar alpha);
@@ -643,16 +674,15 @@ namespace TypeDefault {
   Tensor sparse_coo_tensor(const Tensor & indices, const Tensor & values, IntArrayRef size, const TensorOptions & options);
   Tensor _sparse_coo_tensor_unsafe(const Tensor & indices, const Tensor & values, IntArrayRef size, const TensorOptions & options);
   Tensor to_dense_backward(const Tensor & grad, const Tensor & input);
-  int64_t numel(const Tensor & self);
   std::vector<Tensor> unbind(const Tensor & self, int64_t dim);
   #ifdef BUILD_NAMEDTENSOR
   std::vector<Tensor> unbind(const Tensor & self, Dimname dim);
   #endif
   Tensor to_mkldnn_backward(const Tensor & grad, const Tensor & input);
-  Tensor to(const Tensor & self, const TensorOptions & options, bool non_blocking, bool copy);
-  Tensor to(const Tensor & self, Device device, ScalarType dtype, bool non_blocking, bool copy);
-  Tensor to(const Tensor & self, ScalarType dtype, bool non_blocking, bool copy);
-  Tensor to(const Tensor & self, const Tensor & other, bool non_blocking, bool copy);
+  Tensor to(const Tensor & self, const TensorOptions & options, bool non_blocking, bool copy, c10::optional<MemoryFormat> memory_format);
+  Tensor to(const Tensor & self, Device device, ScalarType dtype, bool non_blocking, bool copy, c10::optional<MemoryFormat> memory_format);
+  Tensor to(const Tensor & self, ScalarType dtype, bool non_blocking, bool copy, c10::optional<MemoryFormat> memory_format);
+  Tensor to(const Tensor & self, const Tensor & other, bool non_blocking, bool copy, c10::optional<MemoryFormat> memory_format);
   std::vector<Tensor> meshgrid(TensorList tensors);
   Tensor cartesian_prod(TensorList tensors);
   Tensor combinations(const Tensor & self, int64_t r, bool with_replacement);
@@ -678,6 +708,7 @@ namespace TypeDefault {
   Tensor rnn_tanh_cell(const Tensor & input, const Tensor & hx, const Tensor & w_ih, const Tensor & w_hh, const Tensor & b_ih, const Tensor & b_hh);
   Tensor rnn_relu_cell(const Tensor & input, const Tensor & hx, const Tensor & w_ih, const Tensor & w_hh, const Tensor & b_ih, const Tensor & b_hh);
   std::tuple<Tensor,Tensor,Tensor> quantized_lstm(const Tensor & input, TensorList hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, bool batch_first, c10::optional<ScalarType> dtype, bool use_dynamic);
+  std::tuple<Tensor,Tensor,Tensor> quantized_lstm(const Tensor & data, const Tensor & batch_sizes, TensorList hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, c10::optional<ScalarType> dtype, bool use_dynamic);
   std::tuple<Tensor,Tensor> quantized_gru(const Tensor & input, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, bool batch_first);
   std::tuple<Tensor,Tensor> quantized_gru(const Tensor & data, const Tensor & batch_sizes, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional);
   std::tuple<Tensor,Tensor> quantized_lstm_cell(const Tensor & input, TensorList hx, const Tensor & w_ih, const Tensor & w_hh, const Tensor & b_ih, const Tensor & b_hh, const Tensor & packed_ih, const Tensor & packed_hh, const Tensor & col_offsets_ih, const Tensor & col_offsets_hh, Scalar scale_ih, Scalar scale_hh, Scalar zero_point_ih, Scalar zero_point_hh);
@@ -732,6 +763,14 @@ namespace TypeDefault {
   Tensor & eq_(Tensor & self, const Tensor & other);
   Tensor & ne_(Tensor & self, Scalar other);
   Tensor & ne_(Tensor & self, const Tensor & other);
+  Tensor bitwise_xor(const Tensor & self, Scalar other);
+  Tensor bitwise_xor(const Tensor & self, const Tensor & other);
+  Tensor & bitwise_xor_(Tensor & self, Scalar other);
+  Tensor & bitwise_xor_(Tensor & self, const Tensor & other);
+  Tensor __xor__(const Tensor & self, Scalar other);
+  Tensor __xor__(const Tensor & self, const Tensor & other);
+  Tensor & __ixor__(Tensor & self, Scalar other);
+  Tensor & __ixor__(Tensor & self, const Tensor & other);
   Tensor & atan2_(Tensor & self, const Tensor & other);
   Tensor & digamma_(Tensor & self);
   Tensor & polygamma_(Tensor & self, int64_t n);
@@ -798,21 +837,31 @@ namespace TypeDefault {
   Tensor normal(double mean, double std, IntArrayRef size, Generator * generator, const TensorOptions & options);
   Tensor & normal_out(Tensor & out, double mean, double std, IntArrayRef size, Generator * generator);
   Tensor alias(const Tensor & self);
+  Tensor & mse_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction);
+  Tensor mse_loss(const Tensor & self, const Tensor & target, int64_t reduction);
+  Tensor & l1_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction);
+  Tensor l1_loss(const Tensor & self, const Tensor & target, int64_t reduction);
+  Tensor l1_loss_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
   Tensor & multilabel_margin_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction);
   Tensor multilabel_margin_loss(const Tensor & self, const Tensor & target, int64_t reduction);
   Tensor & nll_loss_out(Tensor & out, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction, int64_t ignore_index);
   Tensor nll_loss(const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction, int64_t ignore_index);
   Tensor & nll_loss2d_out(Tensor & out, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction, int64_t ignore_index);
   Tensor nll_loss2d(const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction, int64_t ignore_index);
+  Tensor smooth_l1_loss(const Tensor & self, const Tensor & target, int64_t reduction);
+  Tensor smooth_l1_loss_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
   Tensor & log_sigmoid_out(Tensor & out, const Tensor & self);
   Tensor log_sigmoid(const Tensor & self);
   Tensor adaptive_avg_pool2d(const Tensor & self, IntArrayRef output_size);
+  Tensor _test_optional_float(const Tensor & self, c10::optional<double> scale);
+  Tensor sigmoid_backward(const Tensor & grad_output, const Tensor & output);
   Tensor & thnn_conv2d_out(Tensor & out, const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding);
   Tensor thnn_conv2d(const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding);
   Tensor & thnn_conv_depthwise2d_out(Tensor & out, const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation);
   Tensor thnn_conv_depthwise2d(const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation);
-  Tensor & thnn_conv3d_out(Tensor & out, const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding);
-  Tensor thnn_conv3d(const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding);
+  Tensor & slow_conv3d_out(Tensor & out, const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding);
+  Tensor slow_conv3d(const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding);
+  Tensor isfinite(const Tensor & self);
 }  // namespace TypeDefault
 
 } // namespace at

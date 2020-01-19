@@ -32,6 +32,12 @@ class DeprecatedTypeProperties;
 class Tensor;
 } // namespace at
 
+namespace torch { namespace autograd {
+
+struct Node;
+
+}} // namespace torch::autograd
+
 namespace at {
 
 class Tensor;
@@ -43,6 +49,12 @@ struct Quantizer;
 // to frontend
 using QuantizerPtr = c10::intrusive_ptr<Quantizer>;
 using ConstQuantizerPtr = const c10::intrusive_ptr<Quantizer>&;
+
+namespace impl {
+inline bool variable_excluded_from_dispatch() {
+  return c10::impl::tls_local_tensor_type_set().excluded_.has(TensorTypeId::VariableTensorId);
+}
+}
 
 // Tensor is a "generic" object holding a pointer to the underlying TensorImpl object, which
 // has an embedded reference count. In this way, Tensor is similar to boost::intrusive_ptr.
@@ -186,12 +198,17 @@ class CAFFE2_API Tensor {
   int64_t ndimension() const {
     return dim();
   }
+
   bool is_contiguous(at::MemoryFormat memory_format=at::MemoryFormat::Contiguous) const {
     return impl_->is_contiguous(memory_format);
   }
 
+  bool is_non_overlapping_and_dense() const {
+    return impl_->is_non_overlapping_and_dense();
+  }
+
   at::MemoryFormat suggest_memory_format() const {
-    if (impl_->is_strides_like_channels_last()) {
+    if (!is_mkldnn() && !is_sparse() && !impl_->is_contiguous() && impl_->is_strides_like_channels_last()) {
       return at::MemoryFormat::ChannelsLast;
     }
     return at::MemoryFormat::Contiguous;
@@ -204,6 +221,10 @@ class CAFFE2_API Tensor {
   // Defined to be numel() * itemsize()
   size_t nbytes() const {
     return impl_->numel() * impl_->itemsize();
+  }
+
+  int64_t numel() const {
+    return impl_->numel();
   }
 
   // Length of one array element in bytes.  This is the traditional
@@ -220,8 +241,7 @@ class CAFFE2_API Tensor {
   DeprecatedTypeProperties & type() const {
     return globalDeprecatedTypePropertiesRegistry().getDeprecatedTypeProperties(
         tensorTypeIdToBackend(legacyExtractTypeId(type_set())),
-        scalar_type(),
-        is_variable());
+        scalar_type());
   }
   TensorTypeSet type_set() const {
     return impl_->type_set();
@@ -241,10 +261,9 @@ class CAFFE2_API Tensor {
   Tensor toType(ScalarType t) const;
   Tensor toBackend(Backend b) const;
 
-  /// Returns true if the `Tensor` is actually a `torch::autograd::Variable`.
-  /// Defined in Type.h because of include order issues.
+  C10_DEPRECATED_MESSAGE("Tensor.is_variable() is deprecated; everything is a variable now. (If you want to assert that variable has been appropriately handled already, use at::impl::variable_excluded_from_dispatch())")
   bool is_variable() const noexcept {
-    return impl_->is_variable();
+    return !at::impl::variable_excluded_from_dispatch();
   }
 
   /// Returns a `Tensor`'s layout. Defined in Type.h
@@ -403,6 +422,7 @@ class CAFFE2_API Tensor {
   bool is_leaf() const;
   int64_t output_nr() const;
   int64_t _version() const;
+  Tensor & requires_grad_(bool _requires_grad=true) const;
   #ifdef BUILD_NAMEDTENSOR
   Tensor & rename_(c10::optional<DimnameList> names) const;
   #endif
@@ -411,6 +431,9 @@ class CAFFE2_API Tensor {
   #endif
   #ifdef BUILD_NAMEDTENSOR
   Tensor align_to(DimnameList names) const;
+  #endif
+  #ifdef BUILD_NAMEDTENSOR
+  Tensor align_to(DimnameList order, int64_t ellipsis_idx) const;
   #endif
   #ifdef BUILD_NAMEDTENSOR
   Tensor align_as(const Tensor & other) const;
@@ -426,6 +449,10 @@ class CAFFE2_API Tensor {
   #endif
   Tensor abs() const;
   Tensor & abs_() const;
+  Tensor angle() const;
+  Tensor real() const;
+  Tensor imag() const;
+  Tensor conj() const;
   Tensor acos() const;
   Tensor & acos_() const;
   Tensor add(const Tensor & other, Scalar alpha=1) const;
@@ -502,7 +529,8 @@ class CAFFE2_API Tensor {
   Tensor dot(const Tensor & tensor) const;
   Tensor new_empty(IntArrayRef size, const TensorOptions & options={}) const;
   Tensor new_full(IntArrayRef size, Scalar fill_value, const TensorOptions & options={}) const;
-  Tensor & resize_(IntArrayRef size) const;
+  Tensor new_zeros(IntArrayRef size, const TensorOptions & options={}) const;
+  Tensor & resize_(IntArrayRef size, c10::optional<MemoryFormat> memory_format=c10::nullopt) const;
   Tensor erf() const;
   Tensor & erf_() const;
   Tensor erfc() const;
@@ -734,8 +762,8 @@ class CAFFE2_API Tensor {
   #ifdef BUILD_NAMEDTENSOR
   Tensor norm(c10::optional<Scalar> p, DimnameList dim, bool keepdim=false) const;
   #endif
-  Tensor clone() const;
-  Tensor & resize_as_(const Tensor & the_template) const;
+  Tensor clone(c10::optional<MemoryFormat> memory_format=c10::nullopt) const;
+  Tensor & resize_as_(const Tensor & the_template, c10::optional<MemoryFormat> memory_format=c10::nullopt) const;
   Tensor pow(Scalar exponent) const;
   Tensor & zero_() const;
   Tensor sub(const Tensor & other, Scalar alpha=1) const;
@@ -760,7 +788,6 @@ class CAFFE2_API Tensor {
   Tensor & _coalesced_(bool coalesced) const;
   Tensor indices() const;
   Tensor values() const;
-  int64_t numel() const;
   std::vector<Tensor> unbind(int64_t dim=0) const;
   #ifdef BUILD_NAMEDTENSOR
   std::vector<Tensor> unbind(Dimname dim) const;
@@ -776,10 +803,10 @@ class CAFFE2_API Tensor {
   int64_t q_per_channel_axis() const;
   Tensor int_repr() const;
   QScheme qscheme() const;
-  Tensor to(const TensorOptions & options, bool non_blocking=false, bool copy=false) const;
-  Tensor to(Device device, ScalarType dtype, bool non_blocking=false, bool copy=false) const;
-  Tensor to(ScalarType dtype, bool non_blocking=false, bool copy=false) const;
-  Tensor to(const Tensor & other, bool non_blocking=false, bool copy=false) const;
+  Tensor to(const TensorOptions & options, bool non_blocking=false, bool copy=false, c10::optional<MemoryFormat> memory_format=c10::nullopt) const;
+  Tensor to(Device device, ScalarType dtype, bool non_blocking=false, bool copy=false, c10::optional<MemoryFormat> memory_format=c10::nullopt) const;
+  Tensor to(ScalarType dtype, bool non_blocking=false, bool copy=false, c10::optional<MemoryFormat> memory_format=c10::nullopt) const;
+  Tensor to(const Tensor & other, bool non_blocking=false, bool copy=false, c10::optional<MemoryFormat> memory_format=c10::nullopt) const;
   Scalar item() const;
   Tensor & set_(Storage source) const;
   Tensor & set_(Storage source, int64_t storage_offset, IntArrayRef size, IntArrayRef stride={}) const;
@@ -851,6 +878,10 @@ class CAFFE2_API Tensor {
   Tensor __or__(const Tensor & other) const;
   Tensor & __ior__(Scalar other) const;
   Tensor & __ior__(const Tensor & other) const;
+  Tensor bitwise_xor(Scalar other) const;
+  Tensor bitwise_xor(const Tensor & other) const;
+  Tensor & bitwise_xor_(Scalar other) const;
+  Tensor & bitwise_xor_(const Tensor & other) const;
   Tensor __xor__(Scalar other) const;
   Tensor __xor__(const Tensor & other) const;
   Tensor & __ixor__(Scalar other) const;
@@ -991,6 +1022,80 @@ class CAFFE2_API Tensor {
   auto m(F func, Args&&... params) const -> decltype(func(*this, std::forward<Args>(params)...)) {
     return func(*this, std::forward<Args>(params)...);
   }
+
+  /// NOTE: This is similar to the legacy `.data()` function on `Variable`, and is intended
+  /// to be used from functions that need to access the `Variable`'s equivalent `Tensor`
+  /// (i.e. `Tensor` that shares the same storage and tensor metadata with the `Variable`).
+  ///
+  /// One notable difference with the legacy `.data()` function is that changes to the
+  /// returned `Tensor`'s tensor metadata (e.g. sizes / strides / storage / storage_offset)
+  /// will not update the original `Variable`, due to the fact that this function
+  /// shallow-copies the `Variable`'s underlying TensorImpl.
+  at::Tensor tensor_data() const;
+
+  /// NOTE: `var.variable_data()` in C++ has the same semantics as `tensor.data`
+  /// in Python, which create a new `Variable` that shares the same storage and
+  /// tensor metadata with the original `Variable`, but with a completely new
+  /// autograd history.
+  ///
+  /// NOTE: If we change the tensor metadata (e.g. sizes / strides /
+  /// storage / storage_offset) of a variable created from `var.variable_data()`, those
+  /// changes will not update the original variable `var`. In `.variable_data()`, we set
+  /// `allow_tensor_metadata_change_` to false to make such changes explicitly illegal,
+  /// in order to prevent users from changing metadata of `var.variable_data()`
+  /// and expecting the original variable `var` to also be updated.
+  at::Tensor variable_data() const;
+
+  // Gradient Node and Edges
+  //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Gets the gradient function of the `Variable`. If this is a leaf variable,
+  /// the pointer returned will be null.
+  ///
+  /// For View Variables:
+  /// Gets the up-to-date grad_fn. If the shared data or base was modified, we
+  /// re-create the grad_fn to express the up-to-date view relationship between
+  /// this and the base Variable.
+  const std::shared_ptr<torch::autograd::Node>& grad_fn() const;
+
+  // Hooks
+  //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  template <typename T>
+  using hook_return_void_t = c10::guts::enable_if_t<std::is_void<typename std::result_of<T&(Tensor)>::type>::value, unsigned>;
+  template <typename T>
+  using hook_return_var_t = c10::guts::enable_if_t<std::is_same<typename std::result_of<T&(Tensor)>::type, Tensor>::value, unsigned>;
+
+  // Returns the index of the hook in the list which can be used to remove hook
+  // Register a hook with no return value
+  template <typename T>
+  hook_return_void_t<T> register_hook(T&& hook) const;
+  // Register a hook with variable return value
+  template <typename T>
+  hook_return_var_t<T> register_hook(T&& hook) const;
+
+private:
+  unsigned _register_hook(std::function<Tensor(const Tensor&)> hook) const;
+
+public:
+
+  // Remove hook at given position
+  void remove_hook(unsigned pos) const;
+
+  // View Variables
+  //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Returns true if this `Variable` is a view of another `Variable`.
+  bool is_view() const;
+
+  /// Returns the `Variable` that this `Variable` is a view of. If this
+  /// `Variable` is not a view, throw a `std::runtime_error`.
+  const Tensor& base() const;
+
+  // Miscellaneous
+  //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  const std::string& name() const;
 
 protected:
   friend class ::caffe2::Tensor;

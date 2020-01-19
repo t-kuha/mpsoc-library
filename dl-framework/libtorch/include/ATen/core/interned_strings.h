@@ -49,7 +49,7 @@ namespace c10 {
   _(prim, IgnoredPythonOp)           \
   _(prim, Reverse)                   \
   _(prim, Return)                    \
-  _(prim, ReturnStmt)              \
+  _(prim, ReturnStmt)                \
   _(prim, BreakStmt)                 \
   _(prim, ContinueStmt)              \
   _(prim, Store)                     \
@@ -93,6 +93,8 @@ namespace c10 {
   _(prim, enumerate)                 \
   _(prim, range)                     \
   _(prim, rangelist)                 \
+  _(prim, isinstance)                \
+  _(prim, unchecked_cast)            \
   _(aten, _grad_sum_to_size)         \
   _(aten, _size_if_not_equal)        \
   _(aten, _ncf_unsqueeze)            \
@@ -110,12 +112,17 @@ namespace c10 {
   _(prim, CreateObject)              \
   _(prim, SetAttr)                   \
   _(prim, GetAttr)                   \
+  _(prim, HasAttr)                   \
   _(prim, profile)                   \
   _(prim, AddStatValue)              \
   _(prim, TimePoint)                 \
   _(prim, CallFunction)              \
   _(prim, CallMethod)                \
   _(prim, LoopContinuation)          \
+  _(prim, annotate)                  \
+  _(prim, TracedModuleForward)       \
+  _(prim, TracedFork)                \
+  _(prim, TracedAttr)                \
   _(aten, append)                    \
   _(aten, item)                      \
   _(aten, format)                    \
@@ -221,7 +228,10 @@ namespace c10 {
   _(attr, beg)                       \
   _(attr, idx)                       \
   _(attr, split)                     \
-  _(attr, slot)
+  _(attr, slot)                      \
+  _(attr, kinds)                     \
+  _(attr, types)                     \
+  _(attr, scope)
 #else
 #define FORALL_NS_SYMBOLS(_) \
   _(namespaces, prim)              \

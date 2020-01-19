@@ -98,7 +98,7 @@ inline Tensor dispatch__baddbmm_mkl_(Tensor self, const Tensor & batch1, const T
   AutoNoGIL no_gil;
   return at::_baddbmm_mkl_(self, batch1, batch2, beta, alpha);
 }
-inline std::tuple<Tensor,Tensor,Tensor,int64_t> dispatch__batch_norm_impl_index(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps, bool cudnn_enabled) {
+inline std::tuple<Tensor,Tensor,Tensor,Tensor,int64_t> dispatch__batch_norm_impl_index(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps, bool cudnn_enabled) {
 
   AutoNoGIL no_gil;
   return at::_batch_norm_impl_index(input, weight, bias, running_mean, running_var, training, momentum, eps, cudnn_enabled);
@@ -363,10 +363,10 @@ inline bool dispatch__nnpack_available() {
   AutoNoGIL no_gil;
   return at::_nnpack_available();
 }
-inline Tensor dispatch__nnpack_spatial_convolution(const Tensor & input, const Tensor & weight, const Tensor & bias, IntArrayRef padding) {
+inline Tensor dispatch__nnpack_spatial_convolution(const Tensor & input, const Tensor & weight, const Tensor & bias, IntArrayRef padding, IntArrayRef stride) {
 
   AutoNoGIL no_gil;
-  return at::_nnpack_spatial_convolution(input, weight, bias, padding);
+  return at::_nnpack_spatial_convolution(input, weight, bias, padding, stride);
 }
 inline std::tuple<Tensor,Tensor> dispatch__pack_padded_sequence(const Tensor & input, const Tensor & lengths, bool batch_first) {
 
@@ -473,6 +473,11 @@ inline Tensor dispatch__std(const Tensor & self, bool unbiased) {
   AutoNoGIL no_gil;
   return at::_std(self, unbiased);
 }
+inline Tensor dispatch__test_optional_float(const Tensor & self, c10::optional<double> scale) {
+
+  AutoNoGIL no_gil;
+  return at::_test_optional_float(self, scale);
+}
 inline Tensor dispatch__trilinear(const Tensor & i1, const Tensor & i2, const Tensor & i3, IntArrayRef expand1, IntArrayRef expand2, IntArrayRef expand3, IntArrayRef sumdim, int64_t unroll_dim) {
 
   AutoNoGIL no_gil;
@@ -487,6 +492,11 @@ inline std::tuple<Tensor,Tensor,Tensor> dispatch__unique2(const Tensor & self, b
 
   AutoNoGIL no_gil;
   return at::_unique2(self, sorted, return_inverse, return_counts);
+}
+inline bool dispatch__use_cudnn_ctc_loss(const Tensor & log_probs, const Tensor & targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank) {
+
+  AutoNoGIL no_gil;
+  return at::_use_cudnn_ctc_loss(log_probs, targets, input_lengths, target_lengths, blank);
 }
 inline Tensor dispatch__var(const Tensor & self, bool unbiased) {
 
@@ -788,6 +798,16 @@ inline Tensor dispatch_alpha_dropout_(Tensor self, double p, bool train) {
   AutoNoGIL no_gil;
   return at::alpha_dropout_(self, p, train);
 }
+inline Tensor dispatch_angle(const Tensor & self, Tensor out) {
+
+  AutoNoGIL no_gil;
+  return at::angle_out(out, self);
+}
+inline Tensor dispatch_angle(const Tensor & self) {
+
+  AutoNoGIL no_gil;
+  return self.angle();
+}
 inline Tensor dispatch_any(const Tensor & self) {
 
   AutoNoGIL no_gil;
@@ -943,6 +963,11 @@ inline std::tuple<Tensor,Tensor,Tensor,Tensor> dispatch_batch_norm_backward_redu
   AutoNoGIL no_gil;
   return at::batch_norm_backward_reduce(grad_out, input, mean, invstd, weight, input_g, weight_g, bias_g);
 }
+inline Tensor dispatch_batch_norm_elemt(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & mean, const Tensor & invstd, double eps, Tensor out) {
+
+  AutoNoGIL no_gil;
+  return at::batch_norm_elemt_out(out, input, weight, bias, mean, invstd, eps);
+}
 inline Tensor dispatch_batch_norm_elemt(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & mean, const Tensor & invstd, double eps) {
 
   AutoNoGIL no_gil;
@@ -1008,6 +1033,26 @@ inline Tensor dispatch_bitwise_not(const Tensor & self) {
   AutoNoGIL no_gil;
   return self.bitwise_not();
 }
+inline Tensor dispatch_bitwise_xor(const Tensor & self, const Tensor & other, Tensor out) {
+
+  AutoNoGIL no_gil;
+  return at::bitwise_xor_out(out, self, other);
+}
+inline Tensor dispatch_bitwise_xor(const Tensor & self, const Tensor & other) {
+
+  AutoNoGIL no_gil;
+  return self.bitwise_xor(other);
+}
+inline Tensor dispatch_bitwise_xor(const Tensor & self, Scalar other, Tensor out) {
+
+  AutoNoGIL no_gil;
+  return at::bitwise_xor_out(out, self, other);
+}
+inline Tensor dispatch_bitwise_xor(const Tensor & self, Scalar other) {
+
+  AutoNoGIL no_gil;
+  return self.bitwise_xor(other);
+}
 inline Tensor dispatch_blackman_window(int64_t window_length, const TensorOptions & options) {
   torch::utils::maybe_initialize_cuda(options);
   AutoNoGIL no_gil;
@@ -1063,10 +1108,10 @@ inline Tensor dispatch_cat(TensorList tensors, int64_t dim) {
   AutoNoGIL no_gil;
   return at::cat(tensors, dim);
 }
-inline Tensor dispatch_cdist(const Tensor & x1, const Tensor & x2, double p) {
+inline Tensor dispatch_cdist(const Tensor & x1, const Tensor & x2, double p, c10::optional<int64_t> compute_mode) {
 
   AutoNoGIL no_gil;
-  return at::cdist(x1, x2, p);
+  return at::cdist(x1, x2, p, compute_mode);
 }
 inline Tensor dispatch_ceil(const Tensor & self, Tensor out) {
 
@@ -1178,15 +1223,25 @@ inline Tensor dispatch_clamp_min_(Tensor self, Scalar min) {
   AutoNoGIL no_gil;
   return self.clamp_min_(min);
 }
-inline Tensor dispatch_clone(const Tensor & self) {
+inline Tensor dispatch_clone(const Tensor & self, c10::optional<MemoryFormat> memory_format) {
 
   AutoNoGIL no_gil;
-  return self.clone();
+  return self.clone(memory_format);
 }
 inline Tensor dispatch_combinations(const Tensor & self, int64_t r, bool with_replacement) {
 
   AutoNoGIL no_gil;
   return at::combinations(self, r, with_replacement);
+}
+inline Tensor dispatch_conj(const Tensor & self, Tensor out) {
+
+  AutoNoGIL no_gil;
+  return at::conj_out(out, self);
+}
+inline Tensor dispatch_conj(const Tensor & self) {
+
+  AutoNoGIL no_gil;
+  return self.conj();
 }
 inline Tensor dispatch_constant_pad_nd(const Tensor & self, IntArrayRef pad, Scalar value) {
 
@@ -1298,7 +1353,7 @@ inline Tensor dispatch_cudnn_affine_grid_generator(const Tensor & theta, int64_t
   AutoNoGIL no_gil;
   return at::cudnn_affine_grid_generator(theta, N, C, H, W);
 }
-inline std::tuple<Tensor,Tensor,Tensor> dispatch_cudnn_batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double exponential_average_factor, double epsilon) {
+inline std::tuple<Tensor,Tensor,Tensor,Tensor> dispatch_cudnn_batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double exponential_average_factor, double epsilon) {
 
   AutoNoGIL no_gil;
   return at::cudnn_batch_norm(input, weight, bias, running_mean, running_var, training, exponential_average_factor, epsilon);
@@ -1503,10 +1558,10 @@ inline Tensor dispatch_empty_like(const Tensor & self, c10::optional<MemoryForma
   AutoNoGIL no_gil;
   return torch::empty_like(self, options, memory_format);
 }
-inline Tensor dispatch_empty_like(const Tensor & self) {
+inline Tensor dispatch_empty_like(const Tensor & self, c10::optional<MemoryFormat> memory_format) {
 
   AutoNoGIL no_gil;
-  return torch::empty_like(self);
+  return torch::empty_like(self, memory_format);
 }
 inline Tensor dispatch_empty_strided(IntArrayRef size, IntArrayRef stride, const TensorOptions & options) {
   torch::utils::maybe_initialize_cuda(options);
@@ -1823,15 +1878,15 @@ inline Tensor dispatch_full(IntArrayRef size, Scalar fill_value, const TensorOpt
   AutoNoGIL no_gil;
   return torch::full(size, fill_value, options);
 }
-inline Tensor dispatch_full_like(const Tensor & self, Scalar fill_value, const TensorOptions & options) {
+inline Tensor dispatch_full_like(const Tensor & self, Scalar fill_value, c10::optional<MemoryFormat> memory_format, const TensorOptions & options) {
   torch::utils::maybe_initialize_cuda(options);
   AutoNoGIL no_gil;
-  return torch::full_like(self, fill_value, options);
+  return torch::full_like(self, fill_value, options, memory_format);
 }
-inline Tensor dispatch_full_like(const Tensor & self, Scalar fill_value) {
+inline Tensor dispatch_full_like(const Tensor & self, Scalar fill_value, c10::optional<MemoryFormat> memory_format) {
 
   AutoNoGIL no_gil;
-  return torch::full_like(self, fill_value);
+  return torch::full_like(self, fill_value, memory_format);
 }
 inline Tensor dispatch_gather(const Tensor & self, Dimname dim, const Tensor & index, bool sparse_grad, Tensor out) {
 
@@ -2013,6 +2068,16 @@ inline Tensor dispatch_ifft(const Tensor & self, int64_t signal_ndim, bool norma
   AutoNoGIL no_gil;
   return self.ifft(signal_ndim, normalized);
 }
+inline Tensor dispatch_imag(const Tensor & self, Tensor out) {
+
+  AutoNoGIL no_gil;
+  return at::imag_out(out, self);
+}
+inline Tensor dispatch_imag(const Tensor & self) {
+
+  AutoNoGIL no_gil;
+  return self.imag();
+}
 inline Tensor dispatch_index_add(const Tensor & self, Dimname dim, const Tensor & index, const Tensor & source) {
 
   AutoNoGIL no_gil;
@@ -2142,6 +2207,11 @@ inline Tensor dispatch_isclose(const Tensor & self, const Tensor & other, double
 
   AutoNoGIL no_gil;
   return self.isclose(other, rtol, atol, equal_nan);
+}
+inline Tensor dispatch_isfinite(const Tensor & self) {
+
+  AutoNoGIL no_gil;
+  return at::isfinite(self);
 }
 inline Tensor dispatch_isnan(const Tensor & self) {
 
@@ -2898,11 +2968,6 @@ inline Tensor dispatch_nuclear_norm(const Tensor & self, bool keepdim) {
   AutoNoGIL no_gil;
   return at::nuclear_norm(self, keepdim);
 }
-inline int64_t dispatch_numel(const Tensor & self) {
-
-  AutoNoGIL no_gil;
-  return self.numel();
-}
 inline Tensor dispatch_ones(IntArrayRef size, c10::optional<DimnameList> names, const TensorOptions & options) {
   torch::utils::maybe_initialize_cuda(options);
   AutoNoGIL no_gil;
@@ -2918,15 +2983,15 @@ inline Tensor dispatch_ones(IntArrayRef size, const TensorOptions & options) {
   AutoNoGIL no_gil;
   return torch::ones(size, options);
 }
-inline Tensor dispatch_ones_like(const Tensor & self, const TensorOptions & options) {
+inline Tensor dispatch_ones_like(const Tensor & self, c10::optional<MemoryFormat> memory_format, const TensorOptions & options) {
   torch::utils::maybe_initialize_cuda(options);
   AutoNoGIL no_gil;
-  return torch::ones_like(self, options);
+  return torch::ones_like(self, options, memory_format);
 }
-inline Tensor dispatch_ones_like(const Tensor & self) {
+inline Tensor dispatch_ones_like(const Tensor & self, c10::optional<MemoryFormat> memory_format) {
 
   AutoNoGIL no_gil;
-  return torch::ones_like(self);
+  return torch::ones_like(self, memory_format);
 }
 inline Tensor dispatch_orgqr(const Tensor & self, const Tensor & input2, Tensor out) {
 
@@ -3113,6 +3178,11 @@ inline Tensor dispatch_quantized_gru_cell(const Tensor & input, const Tensor & h
   AutoNoGIL no_gil;
   return at::quantized_gru_cell(input, hx, w_ih, w_hh, b_ih, b_hh, packed_ih, packed_hh, col_offsets_ih, col_offsets_hh, scale_ih, scale_hh, zero_point_ih, zero_point_hh);
 }
+inline std::tuple<Tensor,Tensor,Tensor> dispatch_quantized_lstm(const Tensor & data, const Tensor & batch_sizes, TensorList hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, c10::optional<ScalarType> dtype, bool use_dynamic) {
+
+  AutoNoGIL no_gil;
+  return at::quantized_lstm(data, batch_sizes, hx, params, has_biases, num_layers, dropout, train, bidirectional, dtype, use_dynamic);
+}
 inline std::tuple<Tensor,Tensor,Tensor> dispatch_quantized_lstm(const Tensor & input, TensorList hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, bool batch_first, c10::optional<ScalarType> dtype, bool use_dynamic) {
 
   AutoNoGIL no_gil;
@@ -3168,35 +3238,35 @@ inline Tensor dispatch_rand(IntArrayRef size, const TensorOptions & options) {
   AutoNoGIL no_gil;
   return torch::rand(size, options);
 }
-inline Tensor dispatch_rand_like(const Tensor & self, const TensorOptions & options) {
+inline Tensor dispatch_rand_like(const Tensor & self, c10::optional<MemoryFormat> memory_format, const TensorOptions & options) {
   torch::utils::maybe_initialize_cuda(options);
   AutoNoGIL no_gil;
-  return torch::rand_like(self, options);
+  return torch::rand_like(self, options, memory_format);
 }
-inline Tensor dispatch_rand_like(const Tensor & self) {
+inline Tensor dispatch_rand_like(const Tensor & self, c10::optional<MemoryFormat> memory_format) {
 
   AutoNoGIL no_gil;
-  return torch::rand_like(self);
+  return torch::rand_like(self, memory_format);
 }
-inline Tensor dispatch_randint_like(const Tensor & self, int64_t high, const TensorOptions & options) {
+inline Tensor dispatch_randint_like(const Tensor & self, int64_t high, c10::optional<MemoryFormat> memory_format, const TensorOptions & options) {
   torch::utils::maybe_initialize_cuda(options);
   AutoNoGIL no_gil;
-  return torch::randint_like(self, high, options);
+  return torch::randint_like(self, high, options, memory_format);
 }
-inline Tensor dispatch_randint_like(const Tensor & self, int64_t high) {
+inline Tensor dispatch_randint_like(const Tensor & self, int64_t high, c10::optional<MemoryFormat> memory_format) {
 
   AutoNoGIL no_gil;
-  return torch::randint_like(self, high);
+  return torch::randint_like(self, high, memory_format);
 }
-inline Tensor dispatch_randint_like(const Tensor & self, int64_t low, int64_t high, const TensorOptions & options) {
+inline Tensor dispatch_randint_like(const Tensor & self, int64_t low, int64_t high, c10::optional<MemoryFormat> memory_format, const TensorOptions & options) {
   torch::utils::maybe_initialize_cuda(options);
   AutoNoGIL no_gil;
-  return torch::randint_like(self, low, high, options);
+  return torch::randint_like(self, low, high, options, memory_format);
 }
-inline Tensor dispatch_randint_like(const Tensor & self, int64_t low, int64_t high) {
+inline Tensor dispatch_randint_like(const Tensor & self, int64_t low, int64_t high, c10::optional<MemoryFormat> memory_format) {
 
   AutoNoGIL no_gil;
-  return torch::randint_like(self, low, high);
+  return torch::randint_like(self, low, high, memory_format);
 }
 inline Tensor dispatch_randn(IntArrayRef size, c10::optional<DimnameList> names, const TensorOptions & options) {
   torch::utils::maybe_initialize_cuda(options);
@@ -3228,15 +3298,15 @@ inline Tensor dispatch_randn(IntArrayRef size, const TensorOptions & options) {
   AutoNoGIL no_gil;
   return torch::randn(size, options);
 }
-inline Tensor dispatch_randn_like(const Tensor & self, const TensorOptions & options) {
+inline Tensor dispatch_randn_like(const Tensor & self, c10::optional<MemoryFormat> memory_format, const TensorOptions & options) {
   torch::utils::maybe_initialize_cuda(options);
   AutoNoGIL no_gil;
-  return torch::randn_like(self, options);
+  return torch::randn_like(self, options, memory_format);
 }
-inline Tensor dispatch_randn_like(const Tensor & self) {
+inline Tensor dispatch_randn_like(const Tensor & self, c10::optional<MemoryFormat> memory_format) {
 
   AutoNoGIL no_gil;
-  return torch::randn_like(self);
+  return torch::randn_like(self, memory_format);
 }
 inline Tensor dispatch_randperm(int64_t n, Generator * generator, Tensor out) {
 
@@ -3257,6 +3327,16 @@ inline Tensor dispatch_randperm(int64_t n, const TensorOptions & options) {
   torch::utils::maybe_initialize_cuda(options);
   AutoNoGIL no_gil;
   return torch::randperm(n, options);
+}
+inline Tensor dispatch_real(const Tensor & self, Tensor out) {
+
+  AutoNoGIL no_gil;
+  return at::real_out(out, self);
+}
+inline Tensor dispatch_real(const Tensor & self) {
+
+  AutoNoGIL no_gil;
+  return self.real();
 }
 inline Tensor dispatch_reciprocal(const Tensor & self, Tensor out) {
 
@@ -3333,10 +3413,10 @@ inline Tensor dispatch_reshape(const Tensor & self, IntArrayRef shape) {
   AutoNoGIL no_gil;
   return self.reshape(shape);
 }
-inline Tensor dispatch_resize_as_(Tensor self, const Tensor & the_template) {
+inline Tensor dispatch_resize_as_(Tensor self, const Tensor & the_template, c10::optional<MemoryFormat> memory_format) {
 
   AutoNoGIL no_gil;
-  return self.resize_as_(the_template);
+  return self.resize_as_(the_template, memory_format);
 }
 inline ScalarType dispatch_result_type(const Tensor & tensor, const Tensor & other) {
 
@@ -4048,15 +4128,15 @@ inline Tensor dispatch_zeros(IntArrayRef size, const TensorOptions & options) {
   AutoNoGIL no_gil;
   return torch::zeros(size, options);
 }
-inline Tensor dispatch_zeros_like(const Tensor & self, const TensorOptions & options) {
+inline Tensor dispatch_zeros_like(const Tensor & self, c10::optional<MemoryFormat> memory_format, const TensorOptions & options) {
   torch::utils::maybe_initialize_cuda(options);
   AutoNoGIL no_gil;
-  return torch::zeros_like(self, options);
+  return torch::zeros_like(self, options, memory_format);
 }
-inline Tensor dispatch_zeros_like(const Tensor & self) {
+inline Tensor dispatch_zeros_like(const Tensor & self, c10::optional<MemoryFormat> memory_format) {
 
   AutoNoGIL no_gil;
-  return torch::zeros_like(self);
+  return torch::zeros_like(self, memory_format);
 }
 
 }} // namespace torch::autograd

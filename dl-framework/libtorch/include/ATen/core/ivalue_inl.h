@@ -150,6 +150,11 @@ struct CAFFE2_API Tuple : c10::intrusive_ptr_target {
     return c10::make_intrusive<Tuple>(std::move(elements_));
   }
 
+  template <typename... Args>
+  static c10::intrusive_ptr<Tuple> create(Args... elements_) {
+    return c10::make_intrusive<Tuple>(std::vector<IValue>{IValue(elements_)...});
+  }
+
  const std::vector<IValue>& elements() const & {
     return elements_;
   }
@@ -339,6 +344,11 @@ struct C10_EXPORT ivalue::Object final : c10::intrusive_ptr_target {
     return slots_.at(slot);
   }
 
+  void unsafeRemoveSlot(size_t slot) {
+    TORCH_CHECK(slot < slots_.size());
+    slots_.erase(slots_.begin() + slot);
+  }
+
   /**
    * Attribute API.
    *
@@ -351,6 +361,15 @@ struct C10_EXPORT ivalue::Object final : c10::intrusive_ptr_target {
    */
   IValue getAttr(const std::string& name) const;
   void setAttr(const std::string& name, IValue v);
+  // Remove attribute by name, caller is responsible for
+  // the safety of this operation
+  // We didn't remove the attribute in the type because the type
+  // might be shared by multiple objects.
+  // Therefore after removing attribute, the object is in an inconsistent
+  // state where it has more attribute types in its Type than
+  // the attribute slots it has, user needs to make sure the object
+  // has consistent by removing the attribute in type as well
+  void unsafeRemoveAttr(const std::string& name);
 
   std::string name() const;
 
@@ -522,6 +541,30 @@ c10::optional<T> generic_to(
   return std::move(ivalue).to<T>();
 }
 
+namespace detail {
+template <typename Tuple, std::size_t... INDEX>
+Tuple generic_to_tuple_impl(
+    const std::vector<IValue>& t,
+    c10::guts::index_sequence<INDEX...>) {
+  return std::make_tuple(
+      t[INDEX].to<typename std::tuple_element<INDEX, Tuple>::type>()...);
+}
+}
+
+template <
+    typename... Args,
+    typename Indices = c10::guts::make_index_sequence<sizeof...(Args)>,
+    c10::guts::enable_if_t<
+        !c10::guts::disjunction<
+            std::is_lvalue_reference<Args>...,
+            c10::guts::negation<std::is_constructible<IValue, Args>>...>::value,
+        std::nullptr_t> = nullptr>
+std::tuple<Args...> generic_to(IValue ivalue, _fake_type<std::tuple<Args...>>) {
+  auto vals = ivalue.toTuple()->elements();
+  TORCH_CHECK(vals.size() == sizeof...(Args));
+  return detail::generic_to_tuple_impl<std::tuple<Args...>>(vals, Indices{});
+}
+
 template <typename T>
 inline T IValue::to() && {
   return generic_to(std::move(*this), _fake_type<T>{});
@@ -608,6 +651,17 @@ inline c10::intrusive_ptr<ivalue::Tuple> IValue::toTuple() const & {
 inline IValue::IValue(c10::intrusive_ptr<ivalue::Tuple> v)
 : tag(Tag::Tuple), is_intrusive_ptr(true) {
   payload.as_intrusive_ptr = v.release();
+}
+template <
+    typename... Args,
+    c10::guts::enable_if_t<
+        !c10::guts::disjunction<
+            std::is_lvalue_reference<Args>...,
+            c10::guts::negation<std::is_constructible<IValue, Args>>...>::value,
+        std::nullptr_t>>
+inline IValue::IValue(const std::tuple<Args...>& t)
+    : IValue(
+          std::move(c10::guts::apply(c10::ivalue::Tuple::create<Args...>, t))) {
 }
 inline IValue::IValue(c10::List<int64_t> v)
 : tag(Tag::IntList), is_intrusive_ptr(true) {

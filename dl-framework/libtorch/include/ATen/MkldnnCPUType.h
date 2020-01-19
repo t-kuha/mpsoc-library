@@ -52,7 +52,7 @@ namespace MkldnnCPUType {
   Tensor _softmax(const Tensor & self, int64_t dim, bool half_to_float);
   Tensor _mkldnn_transpose(const Tensor & self, int64_t dim0, int64_t dim1);
   Tensor & _mkldnn_transpose_(Tensor & self, int64_t dim0, int64_t dim1);
-  Tensor clone(const Tensor & self);
+  Tensor clone(const Tensor & self, c10::optional<MemoryFormat> memory_format);
   Tensor & zero_(Tensor & self);
   Tensor to_dense(const Tensor & self);
   Tensor mkldnn_reorder_conv2d_weight(const Tensor & self, IntArrayRef padding, IntArrayRef stride, IntArrayRef dilation, int64_t groups);

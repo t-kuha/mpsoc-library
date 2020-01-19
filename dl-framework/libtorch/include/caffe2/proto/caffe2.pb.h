@@ -39,7 +39,7 @@ namespace protobuf_caffe2_2fproto_2fcaffe2_2eproto {
 struct CAFFE2_API TableStruct {
   static const ::google::protobuf::internal::ParseTableField entries[];
   static const ::google::protobuf::internal::AuxillaryParseTableField aux[];
-  static const ::google::protobuf::internal::ParseTable schema[15];
+  static const ::google::protobuf::internal::ParseTable schema[17];
   static const ::google::protobuf::internal::FieldMetadata field_metadata[];
   static const ::google::protobuf::internal::SerializationTable serialization_table[];
   static const ::google::protobuf::uint32 offsets[];
@@ -77,6 +77,12 @@ CAFFE2_API extern PlanDefDefaultTypeInternal _PlanDef_default_instance_;
 class QTensorProto;
 class QTensorProtoDefaultTypeInternal;
 CAFFE2_API extern QTensorProtoDefaultTypeInternal _QTensorProto_default_instance_;
+class TensorBoundShape;
+class TensorBoundShapeDefaultTypeInternal;
+CAFFE2_API extern TensorBoundShapeDefaultTypeInternal _TensorBoundShape_default_instance_;
+class TensorBoundShapes;
+class TensorBoundShapesDefaultTypeInternal;
+CAFFE2_API extern TensorBoundShapesDefaultTypeInternal _TensorBoundShapes_default_instance_;
 class TensorProto;
 class TensorProtoDefaultTypeInternal;
 CAFFE2_API extern TensorProtoDefaultTypeInternal _TensorProto_default_instance_;
@@ -105,6 +111,8 @@ template<> CAFFE2_API ::caffe2::NetDef* Arena::CreateMaybeMessage<::caffe2::NetD
 template<> CAFFE2_API ::caffe2::OperatorDef* Arena::CreateMaybeMessage<::caffe2::OperatorDef>(Arena*);
 template<> CAFFE2_API ::caffe2::PlanDef* Arena::CreateMaybeMessage<::caffe2::PlanDef>(Arena*);
 template<> CAFFE2_API ::caffe2::QTensorProto* Arena::CreateMaybeMessage<::caffe2::QTensorProto>(Arena*);
+template<> CAFFE2_API ::caffe2::TensorBoundShape* Arena::CreateMaybeMessage<::caffe2::TensorBoundShape>(Arena*);
+template<> CAFFE2_API ::caffe2::TensorBoundShapes* Arena::CreateMaybeMessage<::caffe2::TensorBoundShapes>(Arena*);
 template<> CAFFE2_API ::caffe2::TensorProto* Arena::CreateMaybeMessage<::caffe2::TensorProto>(Arena*);
 template<> CAFFE2_API ::caffe2::TensorProto_Segment* Arena::CreateMaybeMessage<::caffe2::TensorProto_Segment>(Arena*);
 template<> CAFFE2_API ::caffe2::TensorProtos* Arena::CreateMaybeMessage<::caffe2::TensorProtos>(Arena*);
@@ -183,6 +191,30 @@ inline bool TensorProto_StorageType_Parse(
     const ::std::string& name, TensorProto_StorageType* value) {
   return ::google::protobuf::internal::ParseNamedEnum<TensorProto_StorageType>(
     TensorProto_StorageType_descriptor(), name, value);
+}
+enum TensorBoundShape_DimType {
+  TensorBoundShape_DimType_UNKNOWN = 0,
+  TensorBoundShape_DimType_CONSTANT = 1,
+  TensorBoundShape_DimType_BATCH = 2,
+  TensorBoundShape_DimType_BATCH_OF_FEATURE_MAX = 3,
+  TensorBoundShape_DimType_BATCH_OF_FEATURE_MAX_DEFAULT = 4,
+  TensorBoundShape_DimType_FEATURE_MAX = 5,
+  TensorBoundShape_DimType_FEATURE_MAX_DEFAULT = 6
+};
+CAFFE2_API bool TensorBoundShape_DimType_IsValid(int value);
+const TensorBoundShape_DimType TensorBoundShape_DimType_DimType_MIN = TensorBoundShape_DimType_UNKNOWN;
+const TensorBoundShape_DimType TensorBoundShape_DimType_DimType_MAX = TensorBoundShape_DimType_FEATURE_MAX_DEFAULT;
+const int TensorBoundShape_DimType_DimType_ARRAYSIZE = TensorBoundShape_DimType_DimType_MAX + 1;
+
+CAFFE2_API const ::google::protobuf::EnumDescriptor* TensorBoundShape_DimType_descriptor();
+inline const ::std::string& TensorBoundShape_DimType_Name(TensorBoundShape_DimType value) {
+  return ::google::protobuf::internal::NameOfEnum(
+    TensorBoundShape_DimType_descriptor(), value);
+}
+inline bool TensorBoundShape_DimType_Parse(
+    const ::std::string& name, TensorBoundShape_DimType* value) {
+  return ::google::protobuf::internal::ParseNamedEnum<TensorBoundShape_DimType>(
+    TensorBoundShape_DimType_descriptor(), name, value);
 }
 enum DeviceTypeProto {
   PROTO_CPU = 0,
@@ -1578,6 +1610,327 @@ class CAFFE2_API TensorShapes : public ::google::protobuf::Message /* @@protoc_i
 };
 // -------------------------------------------------------------------
 
+class CAFFE2_API TensorBoundShape : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:caffe2.TensorBoundShape) */ {
+ public:
+  TensorBoundShape();
+  virtual ~TensorBoundShape();
+
+  TensorBoundShape(const TensorBoundShape& from);
+
+  inline TensorBoundShape& operator=(const TensorBoundShape& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  TensorBoundShape(TensorBoundShape&& from) noexcept
+    : TensorBoundShape() {
+    *this = ::std::move(from);
+  }
+
+  inline TensorBoundShape& operator=(TensorBoundShape&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _internal_metadata_.unknown_fields();
+  }
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return _internal_metadata_.mutable_unknown_fields();
+  }
+
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const TensorBoundShape& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const TensorBoundShape* internal_default_instance() {
+    return reinterpret_cast<const TensorBoundShape*>(
+               &_TensorBoundShape_default_instance_);
+  }
+  static int const kIndexInFileMessages =
+    7;
+
+  void Swap(TensorBoundShape* other);
+  friend void swap(TensorBoundShape& a, TensorBoundShape& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline TensorBoundShape* New() const final {
+    return CreateMaybeMessage<TensorBoundShape>(NULL);
+  }
+
+  TensorBoundShape* New(::google::protobuf::Arena* arena) const final {
+    return CreateMaybeMessage<TensorBoundShape>(arena);
+  }
+  void CopyFrom(const ::google::protobuf::Message& from) final;
+  void MergeFrom(const ::google::protobuf::Message& from) final;
+  void CopyFrom(const TensorBoundShape& from);
+  void MergeFrom(const TensorBoundShape& from);
+  void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) final;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const final;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(TensorBoundShape* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  typedef TensorBoundShape_DimType DimType;
+  static const DimType UNKNOWN =
+    TensorBoundShape_DimType_UNKNOWN;
+  static const DimType CONSTANT =
+    TensorBoundShape_DimType_CONSTANT;
+  static const DimType BATCH =
+    TensorBoundShape_DimType_BATCH;
+  static const DimType BATCH_OF_FEATURE_MAX =
+    TensorBoundShape_DimType_BATCH_OF_FEATURE_MAX;
+  static const DimType BATCH_OF_FEATURE_MAX_DEFAULT =
+    TensorBoundShape_DimType_BATCH_OF_FEATURE_MAX_DEFAULT;
+  static const DimType FEATURE_MAX =
+    TensorBoundShape_DimType_FEATURE_MAX;
+  static const DimType FEATURE_MAX_DEFAULT =
+    TensorBoundShape_DimType_FEATURE_MAX_DEFAULT;
+  static inline bool DimType_IsValid(int value) {
+    return TensorBoundShape_DimType_IsValid(value);
+  }
+  static const DimType DimType_MIN =
+    TensorBoundShape_DimType_DimType_MIN;
+  static const DimType DimType_MAX =
+    TensorBoundShape_DimType_DimType_MAX;
+  static const int DimType_ARRAYSIZE =
+    TensorBoundShape_DimType_DimType_ARRAYSIZE;
+  static inline const ::google::protobuf::EnumDescriptor*
+  DimType_descriptor() {
+    return TensorBoundShape_DimType_descriptor();
+  }
+  static inline const ::std::string& DimType_Name(DimType value) {
+    return TensorBoundShape_DimType_Name(value);
+  }
+  static inline bool DimType_Parse(const ::std::string& name,
+      DimType* value) {
+    return TensorBoundShape_DimType_Parse(name, value);
+  }
+
+  // accessors -------------------------------------------------------
+
+  // repeated .caffe2.TensorBoundShape.DimType dim_type = 2;
+  int dim_type_size() const;
+  void clear_dim_type();
+  static const int kDimTypeFieldNumber = 2;
+  ::caffe2::TensorBoundShape_DimType dim_type(int index) const;
+  void set_dim_type(int index, ::caffe2::TensorBoundShape_DimType value);
+  void add_dim_type(::caffe2::TensorBoundShape_DimType value);
+  const ::google::protobuf::RepeatedField<int>& dim_type() const;
+  ::google::protobuf::RepeatedField<int>* mutable_dim_type();
+
+  // optional string name = 3;
+  bool has_name() const;
+  void clear_name();
+  static const int kNameFieldNumber = 3;
+  const ::std::string& name() const;
+  void set_name(const ::std::string& value);
+  #if LANG_CXX11
+  void set_name(::std::string&& value);
+  #endif
+  void set_name(const char* value);
+  void set_name(const char* value, size_t size);
+  ::std::string* mutable_name();
+  ::std::string* release_name();
+  void set_allocated_name(::std::string* name);
+
+  // optional .caffe2.TensorShape shape = 1;
+  bool has_shape() const;
+  void clear_shape();
+  static const int kShapeFieldNumber = 1;
+  private:
+  const ::caffe2::TensorShape& _internal_shape() const;
+  public:
+  const ::caffe2::TensorShape& shape() const;
+  ::caffe2::TensorShape* release_shape();
+  ::caffe2::TensorShape* mutable_shape();
+  void set_allocated_shape(::caffe2::TensorShape* shape);
+
+  // @@protoc_insertion_point(class_scope:caffe2.TensorBoundShape)
+ private:
+  void set_has_shape();
+  void clear_has_shape();
+  void set_has_name();
+  void clear_has_name();
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::HasBits<1> _has_bits_;
+  mutable ::google::protobuf::internal::CachedSize _cached_size_;
+  ::google::protobuf::RepeatedField<int> dim_type_;
+  ::google::protobuf::internal::ArenaStringPtr name_;
+  ::caffe2::TensorShape* shape_;
+  friend struct ::protobuf_caffe2_2fproto_2fcaffe2_2eproto::TableStruct;
+};
+// -------------------------------------------------------------------
+
+class CAFFE2_API TensorBoundShapes : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:caffe2.TensorBoundShapes) */ {
+ public:
+  TensorBoundShapes();
+  virtual ~TensorBoundShapes();
+
+  TensorBoundShapes(const TensorBoundShapes& from);
+
+  inline TensorBoundShapes& operator=(const TensorBoundShapes& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  TensorBoundShapes(TensorBoundShapes&& from) noexcept
+    : TensorBoundShapes() {
+    *this = ::std::move(from);
+  }
+
+  inline TensorBoundShapes& operator=(TensorBoundShapes&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _internal_metadata_.unknown_fields();
+  }
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return _internal_metadata_.mutable_unknown_fields();
+  }
+
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const TensorBoundShapes& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const TensorBoundShapes* internal_default_instance() {
+    return reinterpret_cast<const TensorBoundShapes*>(
+               &_TensorBoundShapes_default_instance_);
+  }
+  static int const kIndexInFileMessages =
+    8;
+
+  void Swap(TensorBoundShapes* other);
+  friend void swap(TensorBoundShapes& a, TensorBoundShapes& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline TensorBoundShapes* New() const final {
+    return CreateMaybeMessage<TensorBoundShapes>(NULL);
+  }
+
+  TensorBoundShapes* New(::google::protobuf::Arena* arena) const final {
+    return CreateMaybeMessage<TensorBoundShapes>(arena);
+  }
+  void CopyFrom(const ::google::protobuf::Message& from) final;
+  void MergeFrom(const ::google::protobuf::Message& from) final;
+  void CopyFrom(const TensorBoundShapes& from);
+  void MergeFrom(const TensorBoundShapes& from);
+  void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) final;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const final;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(TensorBoundShapes* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // repeated .caffe2.TensorBoundShape shapes = 1;
+  int shapes_size() const;
+  void clear_shapes();
+  static const int kShapesFieldNumber = 1;
+  ::caffe2::TensorBoundShape* mutable_shapes(int index);
+  ::google::protobuf::RepeatedPtrField< ::caffe2::TensorBoundShape >*
+      mutable_shapes();
+  const ::caffe2::TensorBoundShape& shapes(int index) const;
+  ::caffe2::TensorBoundShape* add_shapes();
+  const ::google::protobuf::RepeatedPtrField< ::caffe2::TensorBoundShape >&
+      shapes() const;
+
+  // optional int64 max_batch_size = 2;
+  bool has_max_batch_size() const;
+  void clear_max_batch_size();
+  static const int kMaxBatchSizeFieldNumber = 2;
+  ::google::protobuf::int64 max_batch_size() const;
+  void set_max_batch_size(::google::protobuf::int64 value);
+
+  // optional int64 max_feature_len = 3;
+  bool has_max_feature_len() const;
+  void clear_max_feature_len();
+  static const int kMaxFeatureLenFieldNumber = 3;
+  ::google::protobuf::int64 max_feature_len() const;
+  void set_max_feature_len(::google::protobuf::int64 value);
+
+  // @@protoc_insertion_point(class_scope:caffe2.TensorBoundShapes)
+ private:
+  void set_has_max_batch_size();
+  void clear_has_max_batch_size();
+  void set_has_max_feature_len();
+  void clear_has_max_feature_len();
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::HasBits<1> _has_bits_;
+  mutable ::google::protobuf::internal::CachedSize _cached_size_;
+  ::google::protobuf::RepeatedPtrField< ::caffe2::TensorBoundShape > shapes_;
+  ::google::protobuf::int64 max_batch_size_;
+  ::google::protobuf::int64 max_feature_len_;
+  friend struct ::protobuf_caffe2_2fproto_2fcaffe2_2eproto::TableStruct;
+};
+// -------------------------------------------------------------------
+
 class CAFFE2_API Argument : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:caffe2.Argument) */ {
  public:
   Argument();
@@ -1620,7 +1973,7 @@ class CAFFE2_API Argument : public ::google::protobuf::Message /* @@protoc_inser
                &_Argument_default_instance_);
   }
   static int const kIndexInFileMessages =
-    7;
+    9;
 
   void Swap(Argument* other);
   friend void swap(Argument& a, Argument& b) {
@@ -1898,7 +2251,7 @@ class CAFFE2_API DeviceOption : public ::google::protobuf::Message /* @@protoc_i
                &_DeviceOption_default_instance_);
   }
   static int const kIndexInFileMessages =
-    8;
+    10;
 
   void Swap(DeviceOption* other);
   friend void swap(DeviceOption& a, DeviceOption& b) {
@@ -2083,7 +2436,7 @@ class CAFFE2_API OperatorDef : public ::google::protobuf::Message /* @@protoc_in
                &_OperatorDef_default_instance_);
   }
   static int const kIndexInFileMessages =
-    9;
+    11;
 
   void Swap(OperatorDef* other);
   friend void swap(OperatorDef& a, OperatorDef& b) {
@@ -2394,7 +2747,7 @@ class CAFFE2_API NetDef : public ::google::protobuf::Message /* @@protoc_inserti
                &_NetDef_default_instance_);
   }
   static int const kIndexInFileMessages =
-    10;
+    12;
 
   void Swap(NetDef* other);
   friend void swap(NetDef& a, NetDef& b) {
@@ -2631,7 +2984,7 @@ class CAFFE2_API ExecutionStep : public ::google::protobuf::Message /* @@protoc_
                &_ExecutionStep_default_instance_);
   }
   static int const kIndexInFileMessages =
-    11;
+    13;
 
   void Swap(ExecutionStep* other);
   friend void swap(ExecutionStep& a, ExecutionStep& b) {
@@ -2913,7 +3266,7 @@ class CAFFE2_API PlanDef : public ::google::protobuf::Message /* @@protoc_insert
                &_PlanDef_default_instance_);
   }
   static int const kIndexInFileMessages =
-    12;
+    14;
 
   void Swap(PlanDef* other);
   friend void swap(PlanDef& a, PlanDef& b) {
@@ -3061,7 +3414,7 @@ class CAFFE2_API BlobProto : public ::google::protobuf::Message /* @@protoc_inse
                &_BlobProto_default_instance_);
   }
   static int const kIndexInFileMessages =
-    13;
+    15;
 
   void Swap(BlobProto* other);
   friend void swap(BlobProto& a, BlobProto& b) {
@@ -3269,7 +3622,7 @@ class CAFFE2_API DBReaderProto : public ::google::protobuf::Message /* @@protoc_
                &_DBReaderProto_default_instance_);
   }
   static int const kIndexInFileMessages =
-    14;
+    16;
 
   void Swap(DBReaderProto* other);
   friend void swap(DBReaderProto& a, DBReaderProto& b) {
@@ -4882,6 +5235,248 @@ inline const ::google::protobuf::RepeatedPtrField< ::caffe2::TensorShape >&
 TensorShapes::shapes() const {
   // @@protoc_insertion_point(field_list:caffe2.TensorShapes.shapes)
   return shapes_;
+}
+
+// -------------------------------------------------------------------
+
+// TensorBoundShape
+
+// optional .caffe2.TensorShape shape = 1;
+inline bool TensorBoundShape::has_shape() const {
+  return (_has_bits_[0] & 0x00000002u) != 0;
+}
+inline void TensorBoundShape::set_has_shape() {
+  _has_bits_[0] |= 0x00000002u;
+}
+inline void TensorBoundShape::clear_has_shape() {
+  _has_bits_[0] &= ~0x00000002u;
+}
+inline void TensorBoundShape::clear_shape() {
+  if (shape_ != NULL) shape_->Clear();
+  clear_has_shape();
+}
+inline const ::caffe2::TensorShape& TensorBoundShape::_internal_shape() const {
+  return *shape_;
+}
+inline const ::caffe2::TensorShape& TensorBoundShape::shape() const {
+  const ::caffe2::TensorShape* p = shape_;
+  // @@protoc_insertion_point(field_get:caffe2.TensorBoundShape.shape)
+  return p != NULL ? *p : *reinterpret_cast<const ::caffe2::TensorShape*>(
+      &::caffe2::_TensorShape_default_instance_);
+}
+inline ::caffe2::TensorShape* TensorBoundShape::release_shape() {
+  // @@protoc_insertion_point(field_release:caffe2.TensorBoundShape.shape)
+  clear_has_shape();
+  ::caffe2::TensorShape* temp = shape_;
+  shape_ = NULL;
+  return temp;
+}
+inline ::caffe2::TensorShape* TensorBoundShape::mutable_shape() {
+  set_has_shape();
+  if (shape_ == NULL) {
+    auto* p = CreateMaybeMessage<::caffe2::TensorShape>(GetArenaNoVirtual());
+    shape_ = p;
+  }
+  // @@protoc_insertion_point(field_mutable:caffe2.TensorBoundShape.shape)
+  return shape_;
+}
+inline void TensorBoundShape::set_allocated_shape(::caffe2::TensorShape* shape) {
+  ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
+  if (message_arena == NULL) {
+    delete shape_;
+  }
+  if (shape) {
+    ::google::protobuf::Arena* submessage_arena = NULL;
+    if (message_arena != submessage_arena) {
+      shape = ::google::protobuf::internal::GetOwnedMessage(
+          message_arena, shape, submessage_arena);
+    }
+    set_has_shape();
+  } else {
+    clear_has_shape();
+  }
+  shape_ = shape;
+  // @@protoc_insertion_point(field_set_allocated:caffe2.TensorBoundShape.shape)
+}
+
+// repeated .caffe2.TensorBoundShape.DimType dim_type = 2;
+inline int TensorBoundShape::dim_type_size() const {
+  return dim_type_.size();
+}
+inline void TensorBoundShape::clear_dim_type() {
+  dim_type_.Clear();
+}
+inline ::caffe2::TensorBoundShape_DimType TensorBoundShape::dim_type(int index) const {
+  // @@protoc_insertion_point(field_get:caffe2.TensorBoundShape.dim_type)
+  return static_cast< ::caffe2::TensorBoundShape_DimType >(dim_type_.Get(index));
+}
+inline void TensorBoundShape::set_dim_type(int index, ::caffe2::TensorBoundShape_DimType value) {
+  assert(::caffe2::TensorBoundShape_DimType_IsValid(value));
+  dim_type_.Set(index, value);
+  // @@protoc_insertion_point(field_set:caffe2.TensorBoundShape.dim_type)
+}
+inline void TensorBoundShape::add_dim_type(::caffe2::TensorBoundShape_DimType value) {
+  assert(::caffe2::TensorBoundShape_DimType_IsValid(value));
+  dim_type_.Add(value);
+  // @@protoc_insertion_point(field_add:caffe2.TensorBoundShape.dim_type)
+}
+inline const ::google::protobuf::RepeatedField<int>&
+TensorBoundShape::dim_type() const {
+  // @@protoc_insertion_point(field_list:caffe2.TensorBoundShape.dim_type)
+  return dim_type_;
+}
+inline ::google::protobuf::RepeatedField<int>*
+TensorBoundShape::mutable_dim_type() {
+  // @@protoc_insertion_point(field_mutable_list:caffe2.TensorBoundShape.dim_type)
+  return &dim_type_;
+}
+
+// optional string name = 3;
+inline bool TensorBoundShape::has_name() const {
+  return (_has_bits_[0] & 0x00000001u) != 0;
+}
+inline void TensorBoundShape::set_has_name() {
+  _has_bits_[0] |= 0x00000001u;
+}
+inline void TensorBoundShape::clear_has_name() {
+  _has_bits_[0] &= ~0x00000001u;
+}
+inline void TensorBoundShape::clear_name() {
+  name_.ClearToEmptyNoArena(&GetEmptyStringAlreadyInited());
+  clear_has_name();
+}
+inline const ::std::string& TensorBoundShape::name() const {
+  // @@protoc_insertion_point(field_get:caffe2.TensorBoundShape.name)
+  return name_.GetNoArena();
+}
+inline void TensorBoundShape::set_name(const ::std::string& value) {
+  set_has_name();
+  name_.SetNoArena(&GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:caffe2.TensorBoundShape.name)
+}
+#if LANG_CXX11
+inline void TensorBoundShape::set_name(::std::string&& value) {
+  set_has_name();
+  name_.SetNoArena(
+    &GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:caffe2.TensorBoundShape.name)
+}
+#endif
+inline void TensorBoundShape::set_name(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  set_has_name();
+  name_.SetNoArena(&GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:caffe2.TensorBoundShape.name)
+}
+inline void TensorBoundShape::set_name(const char* value, size_t size) {
+  set_has_name();
+  name_.SetNoArena(&GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:caffe2.TensorBoundShape.name)
+}
+inline ::std::string* TensorBoundShape::mutable_name() {
+  set_has_name();
+  // @@protoc_insertion_point(field_mutable:caffe2.TensorBoundShape.name)
+  return name_.MutableNoArena(&GetEmptyStringAlreadyInited());
+}
+inline ::std::string* TensorBoundShape::release_name() {
+  // @@protoc_insertion_point(field_release:caffe2.TensorBoundShape.name)
+  if (!has_name()) {
+    return NULL;
+  }
+  clear_has_name();
+  return name_.ReleaseNonDefaultNoArena(&GetEmptyStringAlreadyInited());
+}
+inline void TensorBoundShape::set_allocated_name(::std::string* name) {
+  if (name != NULL) {
+    set_has_name();
+  } else {
+    clear_has_name();
+  }
+  name_.SetAllocatedNoArena(&GetEmptyStringAlreadyInited(), name);
+  // @@protoc_insertion_point(field_set_allocated:caffe2.TensorBoundShape.name)
+}
+
+// -------------------------------------------------------------------
+
+// TensorBoundShapes
+
+// repeated .caffe2.TensorBoundShape shapes = 1;
+inline int TensorBoundShapes::shapes_size() const {
+  return shapes_.size();
+}
+inline void TensorBoundShapes::clear_shapes() {
+  shapes_.Clear();
+}
+inline ::caffe2::TensorBoundShape* TensorBoundShapes::mutable_shapes(int index) {
+  // @@protoc_insertion_point(field_mutable:caffe2.TensorBoundShapes.shapes)
+  return shapes_.Mutable(index);
+}
+inline ::google::protobuf::RepeatedPtrField< ::caffe2::TensorBoundShape >*
+TensorBoundShapes::mutable_shapes() {
+  // @@protoc_insertion_point(field_mutable_list:caffe2.TensorBoundShapes.shapes)
+  return &shapes_;
+}
+inline const ::caffe2::TensorBoundShape& TensorBoundShapes::shapes(int index) const {
+  // @@protoc_insertion_point(field_get:caffe2.TensorBoundShapes.shapes)
+  return shapes_.Get(index);
+}
+inline ::caffe2::TensorBoundShape* TensorBoundShapes::add_shapes() {
+  // @@protoc_insertion_point(field_add:caffe2.TensorBoundShapes.shapes)
+  return shapes_.Add();
+}
+inline const ::google::protobuf::RepeatedPtrField< ::caffe2::TensorBoundShape >&
+TensorBoundShapes::shapes() const {
+  // @@protoc_insertion_point(field_list:caffe2.TensorBoundShapes.shapes)
+  return shapes_;
+}
+
+// optional int64 max_batch_size = 2;
+inline bool TensorBoundShapes::has_max_batch_size() const {
+  return (_has_bits_[0] & 0x00000001u) != 0;
+}
+inline void TensorBoundShapes::set_has_max_batch_size() {
+  _has_bits_[0] |= 0x00000001u;
+}
+inline void TensorBoundShapes::clear_has_max_batch_size() {
+  _has_bits_[0] &= ~0x00000001u;
+}
+inline void TensorBoundShapes::clear_max_batch_size() {
+  max_batch_size_ = GOOGLE_LONGLONG(0);
+  clear_has_max_batch_size();
+}
+inline ::google::protobuf::int64 TensorBoundShapes::max_batch_size() const {
+  // @@protoc_insertion_point(field_get:caffe2.TensorBoundShapes.max_batch_size)
+  return max_batch_size_;
+}
+inline void TensorBoundShapes::set_max_batch_size(::google::protobuf::int64 value) {
+  set_has_max_batch_size();
+  max_batch_size_ = value;
+  // @@protoc_insertion_point(field_set:caffe2.TensorBoundShapes.max_batch_size)
+}
+
+// optional int64 max_feature_len = 3;
+inline bool TensorBoundShapes::has_max_feature_len() const {
+  return (_has_bits_[0] & 0x00000002u) != 0;
+}
+inline void TensorBoundShapes::set_has_max_feature_len() {
+  _has_bits_[0] |= 0x00000002u;
+}
+inline void TensorBoundShapes::clear_has_max_feature_len() {
+  _has_bits_[0] &= ~0x00000002u;
+}
+inline void TensorBoundShapes::clear_max_feature_len() {
+  max_feature_len_ = GOOGLE_LONGLONG(0);
+  clear_has_max_feature_len();
+}
+inline ::google::protobuf::int64 TensorBoundShapes::max_feature_len() const {
+  // @@protoc_insertion_point(field_get:caffe2.TensorBoundShapes.max_feature_len)
+  return max_feature_len_;
+}
+inline void TensorBoundShapes::set_max_feature_len(::google::protobuf::int64 value) {
+  set_has_max_feature_len();
+  max_feature_len_ = value;
+  // @@protoc_insertion_point(field_set:caffe2.TensorBoundShapes.max_feature_len)
 }
 
 // -------------------------------------------------------------------
@@ -8061,6 +8656,10 @@ inline void DBReaderProto::set_allocated_key(::std::string* key) {
 
 // -------------------------------------------------------------------
 
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 
 // @@protoc_insertion_point(namespace_scope)
 
@@ -8083,6 +8682,11 @@ template <> struct is_proto_enum< ::caffe2::TensorProto_StorageType> : ::std::tr
 template <>
 inline const EnumDescriptor* GetEnumDescriptor< ::caffe2::TensorProto_StorageType>() {
   return ::caffe2::TensorProto_StorageType_descriptor();
+}
+template <> struct is_proto_enum< ::caffe2::TensorBoundShape_DimType> : ::std::true_type {};
+template <>
+inline const EnumDescriptor* GetEnumDescriptor< ::caffe2::TensorBoundShape_DimType>() {
+  return ::caffe2::TensorBoundShape_DimType_descriptor();
 }
 template <> struct is_proto_enum< ::caffe2::DeviceTypeProto> : ::std::true_type {};
 template <>

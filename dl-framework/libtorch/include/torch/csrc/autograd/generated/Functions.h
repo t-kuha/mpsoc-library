@@ -236,6 +236,19 @@ struct TORCH_API AliasBackward : public Node {
 
 
 };
+struct TORCH_API AngleBackward : public TraceableFunction {
+  using TraceableFunction::TraceableFunction;
+  variable_list apply(variable_list&& grads) override;
+  std::string name() const override { return "AngleBackward"; }
+  void release_variables() override {
+    self_.reset_data();
+    self_.reset_grad_function();
+  }
+
+  ScalarType self_scalar_type;
+  SavedVariable self_;
+
+};
 struct TORCH_API AnyBackward0 : public TraceableFunction {
   using TraceableFunction::TraceableFunction;
   variable_list apply(variable_list&& grads) override;
@@ -535,6 +548,17 @@ struct TORCH_API CoalesceBackward : public TraceableFunction {
   using TraceableFunction::TraceableFunction;
   variable_list apply(variable_list&& grads) override;
   std::string name() const override { return "CoalesceBackward"; }
+  void release_variables() override {
+
+  }
+
+
+
+};
+struct TORCH_API ConjBackward : public TraceableFunction {
+  using TraceableFunction::TraceableFunction;
+  variable_list apply(variable_list&& grads) override;
+  std::string name() const override { return "ConjBackward"; }
   void release_variables() override {
 
   }
@@ -1134,6 +1158,17 @@ struct TORCH_API HistcBackward : public TraceableFunction {
 
 
 };
+struct TORCH_API ImagBackward : public TraceableFunction {
+  using TraceableFunction::TraceableFunction;
+  variable_list apply(variable_list&& grads) override;
+  std::string name() const override { return "ImagBackward"; }
+  void release_variables() override {
+
+  }
+
+  ScalarType self_scalar_type;
+
+};
 struct TORCH_API IndexBackward : public TraceableFunction {
   using TraceableFunction::TraceableFunction;
   variable_list apply(variable_list&& grads) override;
@@ -1312,9 +1347,15 @@ struct TORCH_API LerpBackward1 : public TraceableFunction {
   void release_variables() override {
     weight_.reset_data();
     weight_.reset_grad_function();
+    self_.reset_data();
+    self_.reset_grad_function();
+    end_.reset_data();
+    end_.reset_grad_function();
   }
 
   SavedVariable weight_;
+  SavedVariable self_;
+  SavedVariable end_;
 
 };
 struct TORCH_API LgammaBackward : public TraceableFunction {
@@ -1867,34 +1908,9 @@ struct TORCH_API NativeLayerNormBackward : public TraceableFunction {
   SavedVariable weight_;
   int64_t M = 0;
   int64_t N = 0;
+  double eps;
   SavedVariable result1_;
   SavedVariable result2_;
-
-};
-struct TORCH_API NativeLayerNormBackwardBackward : public TraceableFunction {
-  using TraceableFunction::TraceableFunction;
-  variable_list apply(variable_list&& grads) override;
-  std::string name() const override { return "NativeLayerNormBackwardBackward"; }
-  void release_variables() override {
-    grad_out_.reset_data();
-    grad_out_.reset_grad_function();
-    input_.reset_data();
-    input_.reset_grad_function();
-    mean_.reset_data();
-    mean_.reset_grad_function();
-    rstd_.reset_data();
-    rstd_.reset_grad_function();
-    weight_.reset_data();
-    weight_.reset_grad_function();
-  }
-
-  SavedVariable grad_out_;
-  SavedVariable input_;
-  SavedVariable mean_;
-  SavedVariable rstd_;
-  SavedVariable weight_;
-  int64_t M = 0;
-  int64_t N = 0;
 
 };
 struct TORCH_API NeBackward0 : public TraceableFunction {
@@ -2167,10 +2183,13 @@ struct TORCH_API PowBackward1 : public TraceableFunction {
     self_.reset_grad_function();
     exponent_.reset_data();
     exponent_.reset_grad_function();
+    result_.reset_data();
+    result_.reset_grad_function();
   }
 
   SavedVariable self_;
   SavedVariable exponent_;
+  SavedVariable result_;
 
 };
 struct TORCH_API PowBackward2 : public TraceableFunction {
@@ -2178,12 +2197,12 @@ struct TORCH_API PowBackward2 : public TraceableFunction {
   variable_list apply(variable_list&& grads) override;
   std::string name() const override { return "PowBackward2"; }
   void release_variables() override {
-    exponent_.reset_data();
-    exponent_.reset_grad_function();
+    result_.reset_data();
+    result_.reset_grad_function();
   }
 
   Scalar self;
-  SavedVariable exponent_;
+  SavedVariable result_;
 
 };
 struct TORCH_API ProdBackward0 : public TraceableFunction {
@@ -2225,10 +2244,12 @@ struct TORCH_API PutBackward : public TraceableFunction {
   void release_variables() override {
     index_.reset_data();
     index_.reset_grad_function();
+    source_.reset_data();
+    source_.reset_grad_function();
   }
 
   SavedVariable index_;
-  TypeAndSize source_info;
+  SavedVariable source_;
   bool accumulate;
 
 };
@@ -2277,6 +2298,17 @@ struct TORCH_API RandomBackward2 : public TraceableFunction {
   using TraceableFunction::TraceableFunction;
   variable_list apply(variable_list&& grads) override;
   std::string name() const override { return "RandomBackward2"; }
+  void release_variables() override {
+
+  }
+
+
+
+};
+struct TORCH_API RealBackward : public TraceableFunction {
+  using TraceableFunction::TraceableFunction;
+  variable_list apply(variable_list&& grads) override;
+  std::string name() const override { return "RealBackward"; }
   void release_variables() override {
 
   }
@@ -3265,6 +3297,28 @@ struct TORCH_API BinaryCrossEntropyBackward : public TraceableFunction {
   SavedVariable target_;
   SavedVariable weight_;
   int64_t reduction = 0;
+
+};
+struct TORCH_API BinaryCrossEntropyBackwardBackward : public TraceableFunction {
+  using TraceableFunction::TraceableFunction;
+  variable_list apply(variable_list&& grads) override;
+  std::string name() const override { return "BinaryCrossEntropyBackwardBackward"; }
+  void release_variables() override {
+    self_.reset_data();
+    self_.reset_grad_function();
+    target_.reset_data();
+    target_.reset_grad_function();
+    weight_.reset_data();
+    weight_.reset_grad_function();
+    grad_output_.reset_data();
+    grad_output_.reset_grad_function();
+  }
+
+  SavedVariable self_;
+  SavedVariable target_;
+  SavedVariable weight_;
+  int64_t reduction = 0;
+  SavedVariable grad_output_;
 
 };
 struct TORCH_API BinaryCrossEntropyWithLogitsBackward : public TraceableFunction {
@@ -4408,10 +4462,10 @@ struct TORCH_API ThnnConvDepthwise2DBackwardBackward : public TraceableFunction 
   std::vector<int64_t> dilation;
 
 };
-struct TORCH_API ThnnConv3DBackward : public TraceableFunction {
+struct TORCH_API SlowConv3DBackward : public TraceableFunction {
   using TraceableFunction::TraceableFunction;
   variable_list apply(variable_list&& grads) override;
-  std::string name() const override { return "ThnnConv3DBackward"; }
+  std::string name() const override { return "SlowConv3DBackward"; }
   void release_variables() override {
     self_.reset_data();
     self_.reset_grad_function();
@@ -4432,10 +4486,10 @@ struct TORCH_API ThnnConv3DBackward : public TraceableFunction {
   SavedVariable fgrad_input_;
 
 };
-struct TORCH_API ThnnConv3DBackwardBackward : public TraceableFunction {
+struct TORCH_API SlowConv3DBackwardBackward : public TraceableFunction {
   using TraceableFunction::TraceableFunction;
   variable_list apply(variable_list&& grads) override;
-  std::string name() const override { return "ThnnConv3DBackwardBackward"; }
+  std::string name() const override { return "SlowConv3DBackwardBackward"; }
   void release_variables() override {
     grad_output_.reset_data();
     grad_output_.reset_grad_function();
@@ -5202,7 +5256,6 @@ struct TORCH_API CudnnCtcLossBackward : public TraceableFunction {
 
   bool zero_infinity;
   SavedVariable result0_;
-  TypeAndSize result1_info;
   SavedVariable result1_;
 
 };
@@ -5344,8 +5397,13 @@ struct TORCH_API CudnnBatchNormBackward : public TraceableFunction {
     result1_.reset_grad_function();
     result2_.reset_data();
     result2_.reset_grad_function();
+    result3_.reset_data();
+    result3_.reset_grad_function();
   }
-
+  bool retain_variables = true;
+  void will_release_variables() override {
+    retain_variables = false;
+  }
   SavedVariable input_;
   SavedVariable weight_;
   SavedVariable running_mean_;
@@ -5354,6 +5412,7 @@ struct TORCH_API CudnnBatchNormBackward : public TraceableFunction {
   double epsilon;
   SavedVariable result1_;
   SavedVariable result2_;
+  SavedVariable result3_;
 
 };
 struct TORCH_API CudnnBatchNormBackwardBackward : public TraceableFunction {
@@ -5375,6 +5434,8 @@ struct TORCH_API CudnnBatchNormBackwardBackward : public TraceableFunction {
     save_mean_.reset_grad_function();
     save_var_.reset_data();
     save_var_.reset_grad_function();
+    reserveSpace_.reset_data();
+    reserveSpace_.reset_grad_function();
   }
 
   SavedVariable input_;
@@ -5385,6 +5446,7 @@ struct TORCH_API CudnnBatchNormBackwardBackward : public TraceableFunction {
   SavedVariable save_mean_;
   SavedVariable save_var_;
   double epsilon;
+  SavedVariable reserveSpace_;
 
 };
 struct TORCH_API NnpackSpatialConvolutionBackward : public TraceableFunction {
@@ -5399,9 +5461,11 @@ struct TORCH_API NnpackSpatialConvolutionBackward : public TraceableFunction {
   }
 
   SavedVariable input_;
+  int64_t weight_argsize_2 = 0;
+  int64_t weight_argsize_3 = 0;
   SavedVariable weight_;
   std::vector<int64_t> padding;
-  std::vector<int64_t> weight_sizes;
+  std::vector<int64_t> stride;
 
 };
 struct TORCH_API CudnnRnnBackward : public TraceableFunction {

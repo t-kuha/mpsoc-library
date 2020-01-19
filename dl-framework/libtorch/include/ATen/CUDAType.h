@@ -37,6 +37,7 @@ using ConstQuantizerPtr = const c10::intrusive_ptr<Quantizer>&;
 
 #ifdef USE_STATIC_DISPATCH
 namespace CUDAType {
+  bool _use_cudnn_ctc_loss(const Tensor & log_probs, const Tensor & targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank);
   std::tuple<Tensor,Tensor> _cudnn_ctc_loss(const Tensor & log_probs, const Tensor & targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank, bool deterministic, bool zero_infinity);
   Tensor _cudnn_rnn_flatten_weight(TensorList weight_arr, int64_t weight_stride0, int64_t input_size, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, bool bidirectional);
   std::tuple<Tensor,Tensor,Tensor,Tensor,Tensor> _cudnn_rnn(const Tensor & input, TensorList weight, int64_t weight_stride0, const Tensor & weight_buf, const Tensor & hx, const Tensor & cx, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, double dropout, bool train, bool bidirectional, IntArrayRef batch_sizes, const Tensor & dropout_state);
@@ -44,10 +45,6 @@ namespace CUDAType {
   Tensor _cudnn_init_dropout_state(double dropout, bool train, int64_t dropout_seed, const TensorOptions & options);
   std::tuple<Tensor,Tensor> _fused_dropout(const Tensor & self, double p, Generator * generator);
   Tensor _masked_scale(const Tensor & self, const Tensor & mask, double scale);
-  Tensor & abs_(Tensor & self);
-  Tensor & abs_out(Tensor & out, const Tensor & self);
-  Tensor & acos_(Tensor & self);
-  Tensor & acos_out(Tensor & out, const Tensor & self);
   Tensor add(const Tensor & self, const Tensor & other, Scalar alpha);
   Tensor & add_(Tensor & self, const Tensor & other, Scalar alpha);
   Tensor & add_out(Tensor & out, const Tensor & self, const Tensor & other, Scalar alpha);
@@ -56,8 +53,6 @@ namespace CUDAType {
   Tensor & addmv_out(Tensor & out, const Tensor & self, const Tensor & mat, const Tensor & vec, Scalar beta, Scalar alpha);
   Tensor & arange_out(Tensor & out, Scalar start, Scalar end, Scalar step);
   Tensor as_strided(const Tensor & self, IntArrayRef size, IntArrayRef stride, c10::optional<int64_t> storage_offset);
-  Tensor & asin_(Tensor & self);
-  Tensor & asin_out(Tensor & out, const Tensor & self);
   Tensor & atan_(Tensor & self);
   Tensor & atan_out(Tensor & out, const Tensor & self);
   Tensor baddbmm(const Tensor & self, const Tensor & batch1, const Tensor & batch2, Scalar beta, Scalar alpha);
@@ -84,8 +79,8 @@ namespace CUDAType {
   Tensor & cosh_out(Tensor & out, const Tensor & self);
   Tensor cudnn_affine_grid_generator(const Tensor & theta, int64_t N, int64_t C, int64_t H, int64_t W);
   Tensor cudnn_affine_grid_generator_backward(const Tensor & grad, int64_t N, int64_t C, int64_t H, int64_t W);
-  std::tuple<Tensor,Tensor,Tensor> cudnn_batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double exponential_average_factor, double epsilon);
-  std::tuple<Tensor,Tensor,Tensor> cudnn_batch_norm_backward(const Tensor & input, const Tensor & grad_output, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, const Tensor & save_mean, const Tensor & save_var, double epsilon);
+  std::tuple<Tensor,Tensor,Tensor,Tensor> cudnn_batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double exponential_average_factor, double epsilon);
+  std::tuple<Tensor,Tensor,Tensor> cudnn_batch_norm_backward(const Tensor & input, const Tensor & grad_output, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, const Tensor & save_mean, const Tensor & save_var, double epsilon, const Tensor & reserveSpace);
   Tensor cudnn_convolution(const Tensor & self, const Tensor & weight, const Tensor & bias, IntArrayRef padding, IntArrayRef stride, IntArrayRef dilation, int64_t groups, bool benchmark, bool deterministic);
   Tensor cudnn_convolution_backward_input(IntArrayRef self_size, const Tensor & grad_output, const Tensor & weight, IntArrayRef padding, IntArrayRef stride, IntArrayRef dilation, int64_t groups, bool benchmark, bool deterministic);
   std::tuple<Tensor,Tensor,Tensor> cudnn_convolution_backward(const Tensor & self, const Tensor & grad_output, const Tensor & weight, IntArrayRef padding, IntArrayRef stride, IntArrayRef dilation, int64_t groups, bool benchmark, bool deterministic, std::array<bool,3> output_mask);
@@ -110,7 +105,7 @@ namespace CUDAType {
   Tensor _embedding_bag_dense_backward(const Tensor & grad, const Tensor & indices, const Tensor & offsets, const Tensor & offset2bag, const Tensor & bag_size, const Tensor & maximum_indices, int64_t num_weights, bool scale_grad_by_freq, int64_t mode, const Tensor & per_sample_weights);
   Tensor _embedding_bag_per_sample_weights_backward(const Tensor & grad, const Tensor & weight, const Tensor & indices, const Tensor & offsets, const Tensor & offset2bag, int64_t mode);
   Tensor empty(IntArrayRef size, const TensorOptions & options, c10::optional<MemoryFormat> memory_format);
-  Tensor & resize_(Tensor & self, IntArrayRef size);
+  Tensor & resize_(Tensor & self, IntArrayRef size, c10::optional<MemoryFormat> memory_format);
   Tensor empty_strided(IntArrayRef size, IntArrayRef stride, const TensorOptions & options);
   Tensor & erf_(Tensor & self);
   Tensor & erf_out(Tensor & out, const Tensor & self);
@@ -122,8 +117,6 @@ namespace CUDAType {
   Tensor & eye_out(Tensor & out, int64_t n);
   Tensor & eye_out(Tensor & out, int64_t n, int64_t m);
   Tensor & floor_out(Tensor & out, const Tensor & self);
-  Tensor & frac_(Tensor & self);
-  Tensor & frac_out(Tensor & out, const Tensor & self);
   Tensor grid_sampler_2d(const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners);
   std::tuple<Tensor,Tensor> grid_sampler_2d_backward(const Tensor & grad_output, const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners);
   Tensor grid_sampler_3d(const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners);
@@ -134,13 +127,13 @@ namespace CUDAType {
   Tensor _inverse_helper(const Tensor & self);
   Tensor kl_div_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
   std::tuple<Tensor &,Tensor &> kthvalue_out(Tensor & values, Tensor & indices, const Tensor & self, int64_t k, int64_t dim, bool keepdim);
+  std::tuple<Tensor,Tensor,Tensor> native_layer_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, int64_t M, int64_t N, double eps);
+  std::tuple<Tensor,Tensor,Tensor> native_layer_norm_backward(const Tensor & grad_out, const Tensor & input, const Tensor & mean, const Tensor & rstd, const Tensor & weight, int64_t M, int64_t N, std::array<bool,3> output_mask);
   Tensor & linspace_out(Tensor & out, Scalar start, Scalar end, int64_t steps);
   Tensor & log_out(Tensor & out, const Tensor & self);
-  Tensor & log10_(Tensor & self);
   Tensor & log10_out(Tensor & out, const Tensor & self);
   Tensor & log1p_(Tensor & self);
   Tensor & log1p_out(Tensor & out, const Tensor & self);
-  Tensor & log2_(Tensor & self);
   Tensor & log2_out(Tensor & out, const Tensor & self);
   Tensor & logspace_out(Tensor & out, Scalar start, Scalar end, int64_t steps, double base);
   Tensor _log_softmax(const Tensor & self, int64_t dim, bool half_to_float);
@@ -148,8 +141,6 @@ namespace CUDAType {
   Tensor mean(const Tensor & self, c10::optional<ScalarType> dtype);
   Tensor mean(const Tensor & self, IntArrayRef dim, bool keepdim, c10::optional<ScalarType> dtype);
   Tensor & mean_out(Tensor & out, const Tensor & self, IntArrayRef dim, bool keepdim, c10::optional<ScalarType> dtype);
-  Tensor mean(const Tensor & self, DimnameList dim, bool keepdim, c10::optional<ScalarType> dtype);
-  Tensor & mean_out(Tensor & out, const Tensor & self, DimnameList dim, bool keepdim, c10::optional<ScalarType> dtype);
   std::tuple<Tensor,Tensor,Tensor> miopen_batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double exponential_average_factor, double epsilon);
   std::tuple<Tensor,Tensor,Tensor> miopen_batch_norm_backward(const Tensor & input, const Tensor & grad_output, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, const Tensor & save_mean, const Tensor & save_var, double epsilon);
   Tensor miopen_convolution(const Tensor & self, const Tensor & weight, const Tensor & bias, IntArrayRef padding, IntArrayRef stride, IntArrayRef dilation, int64_t groups, bool benchmark, bool deterministic);
@@ -178,6 +169,7 @@ namespace CUDAType {
   std::tuple<Tensor,Tensor,Tensor> native_batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps);
   std::tuple<Tensor,Tensor> batch_norm_stats(const Tensor & input, double eps);
   Tensor batch_norm_elemt(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & mean, const Tensor & invstd, double eps);
+  Tensor & batch_norm_elemt_out(Tensor & out, const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & mean, const Tensor & invstd, double eps);
   std::tuple<Tensor,Tensor> batch_norm_gather_stats(const Tensor & input, const Tensor & mean, const Tensor & invstd, const Tensor & running_mean, const Tensor & running_var, double momentum, double eps, int64_t count);
   std::tuple<Tensor,Tensor> batch_norm_gather_stats_with_counts(const Tensor & input, const Tensor & mean, const Tensor & invstd, const Tensor & running_mean, const Tensor & running_var, double momentum, double eps, IntArrayRef counts);
   std::tuple<Tensor,Tensor,Tensor> native_batch_norm_backward(const Tensor & grad_out, const Tensor & input, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, const Tensor & save_mean, const Tensor & save_invstd, bool train, double eps, std::array<bool,3> output_mask);
@@ -202,16 +194,10 @@ namespace CUDAType {
   Tensor & rsqrt_out(Tensor & out, const Tensor & self);
   Tensor sigmoid(const Tensor & self);
   Tensor & sigmoid_(Tensor & self);
-  Tensor & sigmoid_out(Tensor & out, const Tensor & self);
-  Tensor & sin_(Tensor & self);
   Tensor & sin_out(Tensor & out, const Tensor & self);
-  Tensor & sinh_(Tensor & self);
-  Tensor & sinh_out(Tensor & out, const Tensor & self);
   Tensor _softmax(const Tensor & self, int64_t dim, bool half_to_float);
   Tensor _softmax_backward_data(const Tensor & grad_output, const Tensor & output, int64_t dim, const Tensor & self);
   Tensor & sspaddmm_out(Tensor & out, const Tensor & self, const Tensor & mat1, const Tensor & mat2, Scalar beta, Scalar alpha);
-  Tensor & sqrt_(Tensor & self);
-  Tensor & sqrt_out(Tensor & out, const Tensor & self);
   Tensor & tan_(Tensor & self);
   Tensor & tan_out(Tensor & out, const Tensor & self);
   Tensor & tanh_(Tensor & self);
@@ -232,7 +218,7 @@ namespace CUDAType {
   Tensor _dirichlet_grad(const Tensor & x, const Tensor & alpha, const Tensor & total);
   Tensor _sample_dirichlet(const Tensor & self, Generator * generator);
   Tensor poisson(const Tensor & self, Generator * generator);
-  Tensor clone(const Tensor & self);
+  Tensor clone(const Tensor & self, c10::optional<MemoryFormat> memory_format);
   Tensor & pow_out(Tensor & out, const Tensor & self, Scalar exponent);
   Tensor pow(const Tensor & self, Scalar exponent);
   Tensor & zero_(Tensor & self);
@@ -277,10 +263,8 @@ namespace CUDAType {
   Tensor __or__(const Tensor & self, const Tensor & other);
   Tensor & __ior__(Tensor & self, Scalar other);
   Tensor & __ior__(Tensor & self, const Tensor & other);
-  Tensor __xor__(const Tensor & self, Scalar other);
-  Tensor __xor__(const Tensor & self, const Tensor & other);
-  Tensor & __ixor__(Tensor & self, Scalar other);
-  Tensor & __ixor__(Tensor & self, const Tensor & other);
+  Tensor & bitwise_xor_out(Tensor & out, const Tensor & self, const Tensor & other);
+  Tensor & bitwise_xor_out(Tensor & out, const Tensor & self, Scalar other);
   Tensor __lshift__(const Tensor & self, Scalar other);
   Tensor __lshift__(const Tensor & self, const Tensor & other);
   Tensor & __ilshift__(Tensor & self, Scalar other);
@@ -443,14 +427,9 @@ namespace CUDAType {
   Tensor binary_cross_entropy(const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction);
   Tensor & binary_cross_entropy_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction);
   Tensor binary_cross_entropy_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction);
-  Tensor & mse_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction);
-  Tensor mse_loss(const Tensor & self, const Tensor & target, int64_t reduction);
   Tensor & mse_loss_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
   Tensor mse_loss_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
-  Tensor & l1_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction);
-  Tensor l1_loss(const Tensor & self, const Tensor & target, int64_t reduction);
   Tensor & l1_loss_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
-  Tensor l1_loss_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
   Tensor & multi_margin_loss_out(Tensor & out, const Tensor & self, const Tensor & target, Scalar p, Scalar margin, const Tensor & weight, int64_t reduction);
   Tensor multi_margin_loss(const Tensor & self, const Tensor & target, Scalar p, Scalar margin, const Tensor & weight, int64_t reduction);
   Tensor & multi_margin_loss_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, Scalar p, Scalar margin, const Tensor & weight, int64_t reduction);
@@ -468,9 +447,7 @@ namespace CUDAType {
   Tensor & nll_loss2d_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction, int64_t ignore_index, const Tensor & total_weight);
   Tensor nll_loss2d_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction, int64_t ignore_index, const Tensor & total_weight);
   Tensor & smooth_l1_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction);
-  Tensor smooth_l1_loss(const Tensor & self, const Tensor & target, int64_t reduction);
   Tensor & smooth_l1_loss_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
-  Tensor smooth_l1_loss_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
   Tensor & soft_margin_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction);
   Tensor soft_margin_loss(const Tensor & self, const Tensor & target, int64_t reduction);
   Tensor & soft_margin_loss_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
@@ -607,7 +584,6 @@ namespace CUDAType {
   Tensor & upsample_nearest3d_backward_out(Tensor & grad_input, const Tensor & grad_output, IntArrayRef output_size, IntArrayRef input_size);
   Tensor upsample_nearest3d_backward(const Tensor & grad_output, IntArrayRef output_size, IntArrayRef input_size);
   Tensor & sigmoid_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & output);
-  Tensor sigmoid_backward(const Tensor & grad_output, const Tensor & output);
   Tensor & tanh_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & output);
   Tensor tanh_backward(const Tensor & grad_output, const Tensor & output);
   Tensor & slow_conv_transpose2d_out(Tensor & out, const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const Tensor & bias, IntArrayRef stride, IntArrayRef padding, IntArrayRef output_padding, IntArrayRef dilation);

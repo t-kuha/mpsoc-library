@@ -37,14 +37,14 @@ namespace QuantizedCPUType {
   Tensor as_strided(const Tensor & self, IntArrayRef size, IntArrayRef stride, c10::optional<int64_t> storage_offset);
   Tensor _empty_affine_quantized(IntArrayRef size, const TensorOptions & options, double scale, int64_t zero_point, c10::optional<MemoryFormat> memory_format);
   Tensor _empty_per_channel_affine_quantized(IntArrayRef size, const Tensor & scales, const Tensor & zero_points, int64_t axis, const TensorOptions & options, c10::optional<MemoryFormat> memory_format);
-  Tensor & resize_(Tensor & self, IntArrayRef size);
+  Tensor & resize_(Tensor & self, IntArrayRef size, c10::optional<MemoryFormat> memory_format);
   Tensor quantized_max_pool2d(const Tensor & self, IntArrayRef kernel_size, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation, bool ceil_mode);
   Tensor mean(const Tensor & self, c10::optional<ScalarType> dtype);
   Tensor mean(const Tensor & self, IntArrayRef dim, bool keepdim, c10::optional<ScalarType> dtype);
   Tensor & mean_out(Tensor & out, const Tensor & self, IntArrayRef dim, bool keepdim, c10::optional<ScalarType> dtype);
   Tensor relu(const Tensor & self);
   Tensor & relu_(Tensor & self);
-  Tensor clone(const Tensor & self);
+  Tensor clone(const Tensor & self, c10::optional<MemoryFormat> memory_format);
   Tensor dequantize(const Tensor & self);
   double q_scale(const Tensor & self);
   int64_t q_zero_point(const Tensor & self);
