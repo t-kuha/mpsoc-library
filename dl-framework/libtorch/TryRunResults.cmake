@@ -15,12 +15,12 @@
 #    check what the source file would have printed when called with the given arguments.
 # The COMPILER_WORKS_COMPILED variable holds the build result for this TRY_RUN().
 # 
-# Source file   : /home/pentaxmedical/work/pt/_mpsoc/CMakeFiles/CMakeTmp/src.c
-# Executable    : /home/pentaxmedical/work/pt/_mpsoc/CMakeFiles/cmTC_9ca6a-COMPILER_WORKS_EXITCODE
+# Source file   : /home/t-kuha/work/pt/_mpsoc/CMakeFiles/CMakeTmp/src.c
+# Executable    : /home/t-kuha/work/pt/_mpsoc/CMakeFiles/cmTC_9ca6a-COMPILER_WORKS_EXITCODE
 # Run arguments : 
 #    Called from: [3]	/usr/local/share/cmake-3.16/Modules/CheckCSourceRuns.cmake
-#                 [2]	/home/pentaxmedical/work/pt/pytorch/cmake/MiscCheck.cmake
-#                 [1]	/home/pentaxmedical/work/pt/pytorch/CMakeLists.txt
+#                 [2]	/home/t-kuha/work/pt/pytorch/cmake/MiscCheck.cmake
+#                 [1]	/home/t-kuha/work/pt/pytorch/CMakeLists.txt
 
 set( COMPILER_WORKS_EXITCODE 
      "PLEASE_FILL_OUT-FAILED_TO_RUN"
@@ -42,13 +42,13 @@ set( COMPILER_WORKS_EXITCODE__TRYRUN_OUTPUT
 #    check what the source file would have printed when called with the given arguments.
 # The BLAS_F2C_DOUBLE_WORKS_COMPILED variable holds the build result for this TRY_RUN().
 # 
-# Source file   : /home/pentaxmedical/work/pt/_mpsoc/CMakeFiles/CMakeTmp/src.c
-# Executable    : /home/pentaxmedical/work/pt/_mpsoc/CMakeFiles/cmTC_90a90-BLAS_F2C_DOUBLE_WORKS_EXITCODE
+# Source file   : /home/t-kuha/work/pt/_mpsoc/CMakeFiles/CMakeTmp/src.c
+# Executable    : /home/t-kuha/work/pt/_mpsoc/CMakeFiles/cmTC_90a90-BLAS_F2C_DOUBLE_WORKS_EXITCODE
 # Run arguments : 
 #    Called from: [4]	/usr/local/share/cmake-3.16/Modules/CheckCSourceRuns.cmake
-#                 [3]	/home/pentaxmedical/work/pt/pytorch/cmake/Modules/FindBLAS.cmake
-#                 [2]	/home/pentaxmedical/work/pt/pytorch/cmake/Dependencies.cmake
-#                 [1]	/home/pentaxmedical/work/pt/pytorch/CMakeLists.txt
+#                 [3]	/home/t-kuha/work/pt/pytorch/cmake/Modules/FindBLAS.cmake
+#                 [2]	/home/t-kuha/work/pt/pytorch/cmake/Dependencies.cmake
+#                 [1]	/home/t-kuha/work/pt/pytorch/CMakeLists.txt
 
 set( BLAS_F2C_DOUBLE_WORKS_EXITCODE 
      "PLEASE_FILL_OUT-FAILED_TO_RUN"
@@ -70,13 +70,13 @@ set( BLAS_F2C_DOUBLE_WORKS_EXITCODE__TRYRUN_OUTPUT
 #    check what the source file would have printed when called with the given arguments.
 # The BLAS_F2C_FLOAT_WORKS_COMPILED variable holds the build result for this TRY_RUN().
 # 
-# Source file   : /home/pentaxmedical/work/pt/_mpsoc/CMakeFiles/CMakeTmp/src.c
-# Executable    : /home/pentaxmedical/work/pt/_mpsoc/CMakeFiles/cmTC_e7dda-BLAS_F2C_FLOAT_WORKS_EXITCODE
+# Source file   : /home/t-kuha/work/pt/_mpsoc/CMakeFiles/CMakeTmp/src.c
+# Executable    : /home/t-kuha/work/pt/_mpsoc/CMakeFiles/cmTC_e7dda-BLAS_F2C_FLOAT_WORKS_EXITCODE
 # Run arguments : 
 #    Called from: [4]	/usr/local/share/cmake-3.16/Modules/CheckCSourceRuns.cmake
-#                 [3]	/home/pentaxmedical/work/pt/pytorch/cmake/Modules/FindBLAS.cmake
-#                 [2]	/home/pentaxmedical/work/pt/pytorch/cmake/Dependencies.cmake
-#                 [1]	/home/pentaxmedical/work/pt/pytorch/CMakeLists.txt
+#                 [3]	/home/t-kuha/work/pt/pytorch/cmake/Modules/FindBLAS.cmake
+#                 [2]	/home/t-kuha/work/pt/pytorch/cmake/Dependencies.cmake
+#                 [1]	/home/t-kuha/work/pt/pytorch/CMakeLists.txt
 
 set( BLAS_F2C_FLOAT_WORKS_EXITCODE 
      "PLEASE_FILL_OUT-FAILED_TO_RUN"
@@ -98,13 +98,13 @@ set( BLAS_F2C_FLOAT_WORKS_EXITCODE__TRYRUN_OUTPUT
 #    check what the source file would have printed when called with the given arguments.
 # The BLAS_USE_CBLAS_DOT_COMPILED variable holds the build result for this TRY_RUN().
 # 
-# Source file   : /home/pentaxmedical/work/pt/_mpsoc/CMakeFiles/CMakeTmp/src.c
-# Executable    : /home/pentaxmedical/work/pt/_mpsoc/CMakeFiles/cmTC_c2a3c-BLAS_USE_CBLAS_DOT_EXITCODE
+# Source file   : /home/t-kuha/work/pt/_mpsoc/CMakeFiles/CMakeTmp/src.c
+# Executable    : /home/t-kuha/work/pt/_mpsoc/CMakeFiles/cmTC_c2a3c-BLAS_USE_CBLAS_DOT_EXITCODE
 # Run arguments : 
 #    Called from: [4]	/usr/local/share/cmake-3.16/Modules/CheckCSourceRuns.cmake
-#                 [3]	/home/pentaxmedical/work/pt/pytorch/cmake/Modules/FindBLAS.cmake
-#                 [2]	/home/pentaxmedical/work/pt/pytorch/cmake/Dependencies.cmake
-#                 [1]	/home/pentaxmedical/work/pt/pytorch/CMakeLists.txt
+#                 [3]	/home/t-kuha/work/pt/pytorch/cmake/Modules/FindBLAS.cmake
+#                 [2]	/home/t-kuha/work/pt/pytorch/cmake/Dependencies.cmake
+#                 [1]	/home/t-kuha/work/pt/pytorch/CMakeLists.txt
 
 set( BLAS_USE_CBLAS_DOT_EXITCODE 
      "PLEASE_FILL_OUT-FAILED_TO_RUN"

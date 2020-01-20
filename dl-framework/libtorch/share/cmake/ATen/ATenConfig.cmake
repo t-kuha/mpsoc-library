@@ -5,5 +5,5 @@
 # ATEN_FOUND -- set to 1 if found
 
 SET(ATEN_FOUND 1)
-SET(ATEN_INCLUDE_DIR "/home/pentaxmedical/work/pt/_mpsoc/_install/include")
+SET(ATEN_INCLUDE_DIR "/home/t-kuha/work/pt/_mpsoc/_install/include")
 SET(ATEN_LIBRARIES "")

@@ -1,7 +1,7 @@
-prefix=/home/pentaxmedical/work/pt/_mpsoc/_install
-exec_prefix=/home/pentaxmedical/work/pt/_mpsoc/_install
-libdir=/home/pentaxmedical/work/pt/_mpsoc/_install/lib
-includedir=/home/pentaxmedical/work/pt/_mpsoc/_install/include
+prefix=/home/t-kuha/work/pt/_mpsoc/_install
+exec_prefix=/home/t-kuha/work/pt/_mpsoc/_install
+libdir=/home/t-kuha/work/pt/_mpsoc/_install/lib
+includedir=/home/t-kuha/work/pt/_mpsoc/_install/include
 
 Name: Protocol Buffers
 Description: Google's Data Interchange Format
